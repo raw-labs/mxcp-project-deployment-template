@@ -1,0 +1,58 @@
+# {{PROJECT_NAME}} MXCP Server - Modern Task Runner
+# Replaces overlapping shell scripts with clean task definitions
+
+# Download {{PROJECT_NAME}} data from S3
+download:
+    @echo "📥 Downloading {{PROJECT_NAME}} data..."
+    python3 scripts/download_real_data.py --output data/licenses.csv
+    @echo "✅ Data download complete"
+
+# Build dbt models from downloaded data
+build-models:
+    @echo "🏗️ Building dbt models..."
+    dbt deps
+    dbt run --vars '{"licenses_file": "data/licenses.csv"}'
+    @echo "✅ dbt models built successfully"
+
+# Run data quality tests
+test-data:
+    @echo "🧪 Running data quality tests..."
+    dbt test --vars '{"licenses_file": "data/licenses.csv"}'
+    @echo "✅ Data quality tests passed"
+
+# Run integration tests
+test-integration:
+    @echo "🔧 Running integration tests..."
+    python tests/python/test_comprehensive.py
+    @echo "✅ Integration tests passed"
+
+# Validate YAML configurations (replaces run_tests.sh)
+test-config:
+    @echo "📝 Validating MXCP configuration..."
+    python -c "import yaml; yaml.safe_load(open('mxcp-site.yml')); print('✅ mxcp-site.yml is valid')"
+    @echo "🔧 Validating tool configurations..."
+    python -c "import yaml, glob; [yaml.safe_load(open(f)) for f in glob.glob('tools/*.yml')]; print('✅ All tool configurations valid')"
+
+# Prepare data for Docker build (replaces prepare-data-for-build.sh)
+prepare-build: download build-models
+    @echo "✅ Data prepared for Docker build"
+
+# Complete development pipeline (replaces run_etl_and_tests.sh)
+full-pipeline: download build-models test-data test-integration
+    @echo "🎉 Complete pipeline finished successfully!"
+
+# Quick configuration validation (no data download needed)
+validate-config: test-config
+    @echo "✅ Configuration validation passed"
+
+# Full CI tests with data (for deploy workflow)
+ci-tests-with-data: test-config download build-models test-data
+    @echo "✅ Full CI tests with data passed"
+
+# Development workflow
+dev: full-pipeline
+    @echo "🚀 Development environment ready"
+
+# Show available tasks
+default:
+    @just --list
