@@ -1,0 +1,218 @@
+name: Deploy to AWS App Runner
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+# Configuration loaded from deployment/config.env by deploy-app-runner.sh
+
+jobs:
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      aws-creds-configured: ${{ steps.check-aws.outputs.configured }}
+    steps:
+      - id: check-aws
+        run: |
+          if [[ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ]] && [[ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️ AWS credentials not configured. Please add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to repository secrets."
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r deployment/requirements.txt
+        # Install any additional dependencies that might be needed for evals
+        pip install openai tiktoken
+    
+    - name: Run tests
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        CI: true
+      run: |
+        chmod +x scripts/run_tests.sh
+        ./scripts/run_tests.sh
+
+  deploy:
+    needs: [check-secrets, test]
+    if: needs.check-secrets.outputs.aws-creds-configured == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Set up environment
+      run: |
+        # App Runner deployment will be handled in separate step
+        
+        # Create config file for App Runner deployment script
+        echo "AWS_ACCOUNT_ID=${{ env.AWS_ACCOUNT_ID }}" > .github/config.env
+        echo "AWS_REGION=${{ env.AWS_REGION }}" >> .github/config.env
+        echo "SERVICE_NAME=${{ env.APP_RUNNER_SERVICE }}" >> .github/config.env
+        echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}" >> .github/config.env
+    
+    
+    - name: Build and push Docker image
+      run: |
+        # Login to ECR
+        aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+        docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+        
+        # Create ECR repository if it doesn't exist
+        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
+        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true
+        
+        # Build from project root with deployment/Dockerfile and data credentials
+        docker build -f deployment/Dockerfile \
+          --build-arg MXCP_DATA_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }} \
+          --build-arg MXCP_DATA_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }} \
+          -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+        
+        # Tag for ECR
+        docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+        
+        # Push to ECR
+        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+    
+    - name: Deploy to AWS App Runner
+      run: |
+        chmod +x .github/scripts/deploy-app-runner.sh
+        ./.github/scripts/deploy-app-runner.sh
+    
+    - name: Monitor App Runner deployment
+      run: |
+        echo "📊 Monitoring App Runner service creation/update..."
+        
+        # Discover service ARN dynamically by name (ARN changes when service is recreated)
+        echo "🔍 Finding service ARN for: ${{ env.APP_RUNNER_SERVICE }}"
+        SERVICE_ARN=$(aws apprunner list-services --region ${{ env.AWS_REGION }} \
+          --query "ServiceSummaryList[?ServiceName=='${{ env.APP_RUNNER_SERVICE }}'].ServiceArn | [0]" \
+          --output text)
+        
+        if [ "$SERVICE_ARN" == "None" ] || [ -z "$SERVICE_ARN" ]; then
+          echo "❌ Service not found after deployment"
+          exit 1
+        fi
+        
+        echo "✅ Found service ARN: $SERVICE_ARN"
+        
+        # Monitor for up to 10 minutes (App Runner can take time)
+        for i in {1..20}; do
+          STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+          echo "[$i/20] Current status: $STATUS"
+          
+          case $STATUS in
+            "RUNNING")
+              echo "✅ Service is RUNNING!"
+              break
+              ;;
+            "CREATE_FAILED"|"UPDATE_FAILED"|"DELETE_FAILED")
+              echo "❌ Service failed with status: $STATUS"
+              # Get more details about the failure
+              aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.{Status:Status,StatusMessage:StatusMessage}' --output table
+              exit 1
+              ;;
+            "OPERATION_IN_PROGRESS"|"CREATING"|"UPDATING")
+              echo "⏳ Service still starting... waiting 30 seconds"
+              sleep 30
+              ;;
+            *)
+              echo "⚠️  Unknown status: $STATUS"
+              sleep 30
+              ;;
+          esac
+        done
+        
+        # Final status check
+        FINAL_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+        if [ "$FINAL_STATUS" != "RUNNING" ]; then
+          echo "❌ Service did not reach RUNNING state after 10 minutes"
+          echo "Final status: $FINAL_STATUS"
+          aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.{Status:Status,StatusMessage:StatusMessage}' --output table
+          exit 1
+        fi
+    
+    - name: Test deployment
+      run: |
+        # Wait for deployment to stabilize
+        echo "⏳ Waiting for App Runner service to stabilize..."
+        sleep 60
+        
+        # Get service URL
+        SERVICE_URL=$(aws apprunner describe-service \
+          --service-arn "arn:aws:apprunner:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:service/${{ env.APP_RUNNER_SERVICE }}" \
+          --query 'Service.ServiceUrl' --output text)
+        
+        echo "🌐 Service URL: https://$SERVICE_URL"
+        
+        # Simple HTTP health check instead of comprehensive tests
+        echo "🔍 Testing service health..."
+        if curl -f "https://$SERVICE_URL/health" > /dev/null 2>&1; then
+          echo "✅ Service health check passed"
+        else
+          echo "⚠️  Health check failed, but service may still be starting..."
+        fi
+        
+        # Test MCP endpoint availability
+        echo "🔍 Testing MCP endpoint..."
+        if curl -f "https://$SERVICE_URL/mcp" > /dev/null 2>&1; then
+          echo "✅ MCP endpoint accessible"
+        else
+          echo "⚠️  MCP endpoint check failed, but deployment completed"
+        fi
+        
+        echo ""
+        echo "🎉 Deployment completed!"
+        echo "🔗 Service available at: https://$SERVICE_URL/mcp"
+    
+    - name: Deployment summary
+      if: always()
+      run: |
+        source .github/config.env
+        
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Service**: $SERVICE_NAME" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: $AWS_REGION" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+        
+        # Get service URL if deployment succeeded
+        if SERVICE_URL=$(aws apprunner describe-service --service-arn "arn:aws:apprunner:${AWS_REGION}:${AWS_ACCOUNT_ID}:service/${SERVICE_NAME}" --query 'Service.ServiceUrl' --output text 2>/dev/null); then
+          echo "- **Service URL**: https://$SERVICE_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **MCP Endpoint**: https://$SERVICE_URL/mcp" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,14 @@
+mxcp: 1
+project: {{PROJECT_NAME}}-mxcp
+profile: prod
+dbt:
+  enabled: true
+sql_tools:
+  enabled: true
+profiles:
+  prod:
+    duckdb:
+      path: /app/data/db-prod.duckdb
+    audit:
+      enabled: true
+      path: /app/logs/audit.jsonl
