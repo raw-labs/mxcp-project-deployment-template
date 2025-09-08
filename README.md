@@ -28,6 +28,22 @@ This repository provides standardized deployment infrastructure for MXCP project
 - `start.sh` - Generic container startup script
 - `requirements.txt` - Base MXCP dependencies
 
+## Prerequisites
+
+### AWS Setup
+1. **AWS Account** with App Runner service access
+2. **IAM Role**: `AppRunnerECRAccessRole` with ECR access permissions
+3. **Repository Secrets** in GitHub:
+   - `AWS_ACCESS_KEY_ID` - For deployment access
+   - `AWS_SECRET_ACCESS_KEY` - For deployment access
+   - `MXCP_DATA_ACCESS_KEY_ID` - For data download (if needed)
+   - `MXCP_DATA_SECRET_ACCESS_KEY` - For data download (if needed)
+
+### Required Tools
+- **Git** - For repository management
+- **Docker** - For local testing (optional)
+- **just** - Modern task runner (optional but recommended)
+
 ## Usage
 
 ### For New MXCP Projects
@@ -54,7 +70,17 @@ vim deployment/config.env
 # APP_RUNNER_SERVICE=your-project-mxcp-server
 ```
 
-**3. Customize Docker Configuration**
+**3. Setup Task Runner (Optional but Recommended)**
+```bash
+# Copy and customize the modern task runner
+cp justfile.template justfile
+sed -i "s/{{PROJECT_NAME}}/your-project/g" justfile
+
+# Install just (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+```
+
+**4. Customize Docker Configuration**
 ```bash
 # Update MXCP configuration
 cp deployment/mxcp-site-docker.yml.template deployment/mxcp-site-docker.yml
@@ -65,14 +91,45 @@ cp deployment/profiles-docker.yml.template deployment/profiles-docker.yml
 sed -i "s/{{PROJECT_NAME}}/your-project/g; s/{{AWS_REGION}}/your-region/g" deployment/profiles-docker.yml
 ```
 
-**4. Add Project-Specific Components**
+**5. Initialize MXCP Project Structure**
 ```bash
-# Add your project-specific directories
-mkdir -p tools/ models/ sql/ scripts/
-# Add your MXCP tools, dbt models, SQL queries, etc.
+# Initialize MXCP project with example endpoints
+mxcp init --bootstrap
+
+# This creates:
+# - mxcp-site.yml (main configuration)
+# - tools/ directory with example endpoints
+# - Basic project structure
 ```
 
-**5. Deploy**
+**6. Choose Your Data Strategy**
+
+The template supports three data patterns:
+
+**Option A: Static Data (simplest)**
+```bash
+# Place your data files in data/ directory
+mkdir -p data/
+# Copy your CSV/JSON files here
+# Modify Dockerfile to skip download step
+```
+
+**Option B: Downloaded Data**
+```bash
+# Create data download script (customize for your source)
+mkdir -p scripts/
+# Create scripts/download_real_data.py for your data source (S3, API, etc.)
+# Docker will run this during build
+```
+
+**Option C: Live API Integration**
+```bash
+# No data download needed - your tools connect to live APIs
+# Remove data download from Dockerfile
+# Configure API endpoints in your tools/
+```
+
+**7. Deploy**
 ```bash
 # Set GitHub repository secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 # Push to trigger automatic deployment
