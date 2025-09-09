@@ -12,17 +12,17 @@ else
     echo "⚠️  No deployment/config.env found, using defaults"
 fi
 
-# Default configuration (RAW Labs defaults - Squirro should override in deployment/config.env)
-export AWS_REGION="${AWS_REGION:-eu-west-1}"
-export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-684130658470}"
-export SERVICE_NAME="${SERVICE_NAME:-uae-mxcp-server}"
-export ECR_REPOSITORY="${ECR_REPOSITORY:-uae-mxcp-server}"
+# Default configuration (override in deployment/config.env)
+export AWS_REGION="${AWS_REGION:-us-east-1}"
+export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-YOUR_AWS_ACCOUNT_ID}"
+export SERVICE_NAME="${SERVICE_NAME:-your-project-mxcp-server}"
+export ECR_REPOSITORY="${ECR_REPOSITORY:-your-project-mxcp-server}"
 
 # Derived values
 export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 export ECR_IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
 
-echo "🚀 Deploying UAE MXCP Server to AWS App Runner"
+echo "🚀 Deploying MXCP Server to AWS App Runner"
 echo "================================================"
 echo "Service: $SERVICE_NAME"
 echo "Region: $AWS_REGION"

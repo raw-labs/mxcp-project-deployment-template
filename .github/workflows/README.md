@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for the finance demo MXCP server project.
+This directory contains GitHub Actions workflows for MXCP server projects.
 
 ## Available Workflows
 
@@ -65,12 +65,12 @@ You can manually trigger workflows from the Actions tab:
 ## Deployment Configuration
 
 The deployment workflow uses these settings (defined in `deploy.yml`):
-- **AWS Region**: eu-west-1
-- **AWS Account**: 684130658470
-- **ECR Repository**: finance-demo-mxcp-server
-- **App Runner Service**: finance-demo-mxcp-server
+- **AWS Region**: Configured in deployment/config.env
+- **AWS Account**: Configured in deployment/config.env  
+- **ECR Repository**: Configured in deployment/config.env
+- **App Runner Service**: Configured in deployment/config.env
 
-To modify these, edit the `env` section in `deploy.yml`.
+To modify these, edit your `deployment/config.env` file with your project-specific values.
 
 ## Best Practices
 
