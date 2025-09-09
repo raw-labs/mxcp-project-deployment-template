@@ -48,6 +48,23 @@ This repository provides standardized deployment infrastructure for MXCP project
 
 ### For New MXCP Projects
 
+#### Quick Setup (Automated)
+
+```bash
+# Copy template to your project
+cp -r /path/to/mxcp-project-deployment-template your-new-project/
+cd your-new-project
+
+# Run automated setup (steps 2-4)
+./setup-project.sh your-project-name [aws-region]
+
+# Example:
+./setup-project.sh finance-demo
+./setup-project.sh uae-licenses us-west-2
+```
+
+#### Manual Setup (Step by Step)
+
 **1. Copy Template Components**
 ```bash
 # Copy the stable and customizable directories to your new project
