@@ -24,7 +24,7 @@ This repository provides standardized deployment infrastructure for MXCP project
 - `config.env.template` - AWS account, ECR repository, service names
 - `mxcp-site-docker.yml.template` - MXCP configuration with project name
 - `profiles-docker.yml.template` - dbt profiles with project name
-- `mxcp-user-config.yml.template` - MXCP user config with LLM API keys
+- `mxcp-user-config.yml.template` - MXCP user config with LLM API keys and generic secrets
 - `Dockerfile` - Generic container build pattern
 - `start.sh` - Generic container startup script
 - `requirements.txt` - Base MXCP dependencies
