@@ -12,9 +12,9 @@ else
     echo "⚠️  No deployment/config.env found, using defaults"
 fi
 
-# Default configuration (RAW Labs defaults - override in deployment/config.env)
-export AWS_REGION="${AWS_REGION:-eu-west-1}"
-export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-684130658470}"
+# Default configuration (override in deployment/config.env)
+export AWS_REGION="${AWS_REGION:-us-east-1}"
+export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-YOUR_AWS_ACCOUNT_ID}"
 export SERVICE_NAME="${SERVICE_NAME:-your-project-mxcp-server}"
 export ECR_REPOSITORY="${ECR_REPOSITORY:-your-project-mxcp-server}"
 
