@@ -24,6 +24,7 @@ This repository provides standardized deployment infrastructure for MXCP project
 - `config.env.template` - AWS account, ECR repository, service names
 - `mxcp-site-docker.yml.template` - MXCP configuration with project name
 - `profiles-docker.yml.template` - dbt profiles with project name
+- `mxcp-user-config.yml.template` - MXCP user config with LLM API keys
 - `Dockerfile` - Generic container build pattern
 - `start.sh` - Generic container startup script
 - `requirements.txt` - Base MXCP dependencies
@@ -38,6 +39,8 @@ This repository provides standardized deployment infrastructure for MXCP project
    - `AWS_SECRET_ACCESS_KEY` - For deployment access
    - `MXCP_DATA_ACCESS_KEY_ID` - For data download (if needed)
    - `MXCP_DATA_SECRET_ACCESS_KEY` - For data download (if needed)
+   - `OPENAI_API_KEY` - For LLM functionality (optional)
+   - `ANTHROPIC_API_KEY` - For Claude models (optional)
 
 ### Required Tools
 - **Git** - For repository management

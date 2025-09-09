@@ -98,6 +98,11 @@ sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{AWS_REGION}}/$AWS_REGION/g" depl
 
 print_success "Created deployment/profiles-docker.yml"
 
+# Copy MXCP user configuration
+cp deployment/mxcp-user-config.yml.template deployment/mxcp-user-config.yml
+
+print_success "Created deployment/mxcp-user-config.yml"
+
 # Summary
 echo ""
 print_success "🎉 Project setup complete!"
@@ -113,6 +118,7 @@ echo "- deployment/config.env"
 echo "- justfile"
 echo "- deployment/mxcp-site-docker.yml"
 echo "- deployment/profiles-docker.yml"
+echo "- deployment/mxcp-user-config.yml"
 echo ""
 echo -e "${BLUE}Project: ${GREEN}$PROJECT_NAME${NC}"
 echo -e "${BLUE}Region:  ${GREEN}$AWS_REGION${NC}"

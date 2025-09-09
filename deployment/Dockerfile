@@ -27,6 +27,10 @@ COPY . .
 COPY deployment/mxcp-site-docker.yml ./mxcp-site.yml
 COPY deployment/profiles-docker.yml ./profiles.yml
 
+# Create MXCP user configuration directory and copy config
+RUN mkdir -p /home/mxcp/.mxcp
+COPY deployment/mxcp-user-config.yml.template /home/mxcp/.mxcp/config.yml
+
 # PROJECT-SPECIFIC: UAE Business License Data Preparation
 # Squirro can modify this section for their data sources
 ARG MXCP_DATA_ACCESS_KEY_ID
@@ -44,7 +48,7 @@ ENV AWS_ACCESS_KEY_ID=""
 ENV AWS_SECRET_ACCESS_KEY=""
 
 # Ensure directories have correct permissions
-RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs
+RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs /home/mxcp/.mxcp
 
 # Set environment variables
 ENV PYTHONPATH=/app
