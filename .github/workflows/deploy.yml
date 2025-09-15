@@ -14,11 +14,7 @@ on:
           - production
           - staging
 
-env:
-  AWS_REGION: eu-west-1
-  AWS_ACCOUNT_ID: 684130658470
-  ECR_REPOSITORY: uae-mxcp-server
-  APP_RUNNER_SERVICE: uae-mxcp-server
+# Configuration loaded from deployment/config.env by deploy-app-runner.sh
 
 jobs:
   check-secrets:

@@ -1,4 +1,4 @@
-# UAE MXCP Server - Simple build following proven vertec pattern
+# MXCP Server - Generic build template
 FROM python:3.11-slim
 
 # Install system dependencies
