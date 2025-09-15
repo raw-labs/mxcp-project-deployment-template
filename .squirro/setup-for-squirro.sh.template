@@ -23,9 +23,12 @@ mkdir -p .github
 touch .github/.squirro-configured
 echo "squirro-deployment" > .github/.squirro-configured
 
-# 2. Copy Squirro-specific GitHub workflow
-echo "📋 Setting up Squirro EKS deployment workflow..."
-cp .squirro/workflows/deploy-eks.yml .github/workflows/
+# 2. Copy Squirro's build-and-push workflow (ECR only, no App Runner)
+echo "📋 Setting up Squirro's build-and-push workflow..."
+cp .squirro/workflows/build-and-push-to-ecr.yml .github/workflows/
+rm -f .github/workflows/deploy.yml  # Remove RAW's App Runner deployment
+echo "   ✅ Replaced RAW's App Runner workflow with Squirro's ECR-only workflow"
+echo "   ℹ️  External system (Flux) will handle K8s deployment automatically"
 
 # 3. Update mxcp-site.yml for Squirro profile
 echo "⚙️  Configuring MXCP for Squirro environment..."
@@ -63,6 +66,8 @@ echo ""
 echo "✅ Template files created!"
 echo ""
 echo "🚨 CRITICAL: You MUST edit these files before deployment:"
+echo ""
+echo "📝 Required edits for {{PROJECT_NAME}} MXCP Server:"
 echo ""
 echo "📝 Required edits:"
 echo "1. Edit deployment/config.env:"
