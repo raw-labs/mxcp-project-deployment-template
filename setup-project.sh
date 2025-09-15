@@ -67,7 +67,13 @@ print_step "Step 3: Setting up task runner..."
 cp justfile.template justfile
 sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" justfile
 
-print_success "Created justfile with project name: $PROJECT_NAME"
+# Replace generic placeholders with UAE-specific commands (default example)
+# Projects can customize these commands for their specific data sources
+sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
+sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+
+print_success "Created justfile with project-specific commands"
 
 # Check if just is installed
 if ! command -v just &> /dev/null; then
