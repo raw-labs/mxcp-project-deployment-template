@@ -27,10 +27,6 @@ COPY . .
 COPY deployment/mxcp-site-docker.yml ./mxcp-site.yml
 COPY deployment/profiles-docker.yml ./profiles.yml
 
-# Create MXCP user configuration directory and copy config
-RUN mkdir -p /home/mxcp/.mxcp
-COPY deployment/mxcp-user-config.yml.template /home/mxcp/.mxcp/config.yml
-
 # PROJECT-SPECIFIC: UAE Business License Data Preparation
 # Squirro can modify this section for their data sources
 ARG MXCP_DATA_ACCESS_KEY_ID
@@ -38,17 +34,19 @@ ARG MXCP_DATA_SECRET_ACCESS_KEY
 ENV AWS_ACCESS_KEY_ID=$MXCP_DATA_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$MXCP_DATA_SECRET_ACCESS_KEY
 
-# Download and process UAE business license data
+# Install just task runner for streamlined data preparation
+RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+# Download and process UAE business license data using just
 RUN mkdir -p ./data ./logs
-RUN python3 scripts/download_real_data.py --output data/licenses.csv
-RUN dbt deps && dbt run --vars '{"licenses_file": "data/licenses.csv"}'
+RUN just prepare-build
 
 # Clear AWS credentials after data preparation (security)
 ENV AWS_ACCESS_KEY_ID=""
 ENV AWS_SECRET_ACCESS_KEY=""
 
 # Ensure directories have correct permissions
-RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs /home/mxcp/.mxcp
+RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs
 
 # Set environment variables
 ENV PYTHONPATH=/app
