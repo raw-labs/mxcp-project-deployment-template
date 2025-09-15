@@ -72,6 +72,7 @@ sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" justfile
 sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
 sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
 sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals basic_test\\\n    mxcp evals search_functionality\\\n    mxcp evals aggregation_analysis\\\n    mxcp evals geographic_analysis\\\n    mxcp evals timeseries_analysis\\\n    mxcp evals edge_cases|g" justfile
 
 print_success "Created justfile with project-specific commands"
 

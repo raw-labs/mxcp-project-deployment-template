@@ -26,6 +26,13 @@ test-integration:
     python tests/python/test_comprehensive.py
     @echo "✅ Integration tests passed"
 
+# Run LLM evaluation tests (Level 3 testing - requires OPENAI_API_KEY)
+test-evals:
+    @echo "🤖 Running LLM evaluation tests..."
+    @echo "⚠️  This requires OPENAI_API_KEY and will incur costs"
+    {{MXCP_EVALS_COMMANDS}}
+    @echo "✅ LLM evaluation tests passed"
+
 # Validate YAML configurations (replaces run_tests.sh)
 test-config:
     @echo "📝 Validating MXCP configuration..."
@@ -41,6 +48,13 @@ prepare-build: download build-models
 full-pipeline: download build-models test-data test-integration
     @echo "🎉 Complete pipeline finished successfully!"
 
+# Complete testing suite (all 3 levels - requires OPENAI_API_KEY)
+test-all: test-data test-integration test-evals
+    @echo "🎉 All testing levels completed successfully!"
+    @echo "✅ Level 1: Data quality tests (dbt)"
+    @echo "✅ Level 2: Integration tests (MXCP tools)"
+    @echo "✅ Level 3: LLM evaluation tests (evals)"
+
 # Quick configuration validation (no data download needed)
 validate-config: test-config
     @echo "✅ Configuration validation passed"
@@ -49,9 +63,13 @@ validate-config: test-config
 ci-tests-with-data: test-config download build-models test-data
     @echo "✅ Full CI tests with data passed"
 
-# Development workflow
+# Development workflow (standard - no LLM costs)
 dev: full-pipeline
     @echo "🚀 Development environment ready"
+
+# Development workflow with full testing (includes LLM evals - costs apply)
+dev-full: download build-models test-all
+    @echo "🚀 Development environment ready with full testing suite"
 
 # Show available tasks
 default:
