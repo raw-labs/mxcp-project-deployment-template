@@ -159,7 +159,12 @@ git push origin main
 ## Template Philosophy
 
 - **`.github/` = STABLE** - Rarely changes, provides consistent CI/CD
+- **`.squirro/` = SQUIRRO-SPECIFIC** - Tools and workflows for Squirro integration
 - **`deployment/` = CUSTOMIZABLE** - Projects modify configuration files
+- **`justfile.template` = GENERIC** - Uses placeholders for project-specific commands:
+  - `{{DATA_DOWNLOAD_COMMAND}}` - How to download your project's data
+  - `{{DBT_RUN_COMMAND}}` - How to run dbt with your data variables
+  - `{{DBT_TEST_COMMAND}}` - How to test dbt with your data variables
 - **Clear separation** - Teams know exactly what to customize vs what to keep
 
 ## Examples
