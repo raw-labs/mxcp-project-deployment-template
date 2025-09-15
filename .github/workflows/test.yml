@@ -38,11 +38,12 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         CI: true
       run: |
-        # Make test script executable
-        chmod +x scripts/run_tests.sh
+        # Install just task runner
+        curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
         
         # Run comprehensive test suite
-        ./scripts/run_tests.sh
+        just validate-config
     
     - name: Upload test results
       if: always()

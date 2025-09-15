@@ -1,99 +1,87 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for MXCP server projects.
+This directory contains GitHub Actions workflows for the UAE MXCP Server project.
 
 ## Available Workflows
 
-### 1. Tests (`test.yml`)
-- **Trigger**: Pull requests to `main` or `develop` branches, or manual dispatch
-- **Purpose**: Run the complete test suite including:
-  - MXCP validation tests
-  - dbt schema tests
-  - Tool functionality tests
-  - Data quality tests
-- **Requirements**: 
-  - `OPENAI_API_KEY` secret for evaluation tests
-  - `GH_PAT` secret for submodule access
+### 1. Configuration Validation (`test.yml`)
+- **Trigger**: Pull requests to `main` branch, or manual dispatch
+- **Purpose**: Quick validation of configuration files
+- **What it runs**: `just validate-config`
+  - YAML configuration validation
+  - Tool definition syntax checks
+- **Duration**: ~10 seconds
+- **Requirements**: None (no secrets needed)
 
-### 2. Deploy to AWS (`deploy.yml`)
+### 2. Deploy to AWS App Runner (`deploy.yml`)
 - **Trigger**: Push to `main` branch, or manual dispatch
-- **Purpose**: Deploy the MXCP server to AWS App Runner
-- **Process**:
-  1. Runs all tests first
-  2. Builds Docker image and pushes to ECR
-  3. Updates App Runner service
-  4. Monitors deployment until complete
-  5. Tests the deployed service
-- **Requirements**:
-  - `AWS_ACCESS_KEY_ID` secret
-  - `AWS_SECRET_ACCESS_KEY` secret
-  - `GH_PAT` secret for submodule access
-  - `OPENAI_API_KEY` secret for tests
+- **Purpose**: Complete build, deploy, and test pipeline
+- **Workflow**:
+  1. **validate-config**: Quick configuration validation
+  2. **deploy**: Build Docker image, push to ECR, deploy to App Runner
+  3. **test-deployment**: Post-deployment health and integration testing
+- **Duration**: ~8-12 minutes
+- **Requirements**: 
+  - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` secrets
+  - `MXCP_DATA_ACCESS_KEY_ID` and `MXCP_DATA_SECRET_ACCESS_KEY` secrets (for data download)
 
-### 3. Release (`release.yml`)
-- **Trigger**: Manual dispatch only
-- **Purpose**: Create a new version release
-- **Process**:
-  1. Validates version format (must be vX.Y.Z)
-  2. Generates changelog from commits
-  3. Creates git tag
-  4. Creates GitHub release
-  5. Optionally triggers deployment
-- **Inputs**:
-  - `version`: Version to release (e.g., v1.0.0)
-  - `release_notes`: Additional release notes
+### 3. Release Management (`release.yml`)
+- **Trigger**: Manual dispatch or tag creation
+- **Purpose**: Create releases and manage versioning
+- **Duration**: ~2 minutes
 
-## Required Repository Secrets
+## Workflow Details
 
-Configure these in your repository settings under Secrets and Variables > Actions:
+### Environment Variables
+The workflows use these environment variables (configured in the workflow files):
+```yaml
+env:
+  AWS_REGION: eu-west-1
+  AWS_ACCOUNT_ID: 684130658470
+  ECR_REPOSITORY: uae-mxcp-server
+  APP_RUNNER_SERVICE: uae-mxcp-server
+```
 
-1. **AWS_ACCESS_KEY_ID**: AWS access key for deployment
-2. **AWS_SECRET_ACCESS_KEY**: AWS secret key for deployment
-3. **OPENAI_API_KEY**: OpenAI API key for running evaluation tests
-4. **GH_PAT**: GitHub Personal Access Token with repo scope (for accessing submodules)
+### Modern Task Runner
+All workflows use the `just` task runner for clean, maintainable task execution:
+- `just validate-config` - Configuration validation
+- `just prepare-build` - Data download and dbt processing
+- Integration testing against deployed service
 
-## Manual Workflow Dispatch
+### Security
+- **Secrets**: Stored in GitHub repository secrets
+- **Data access**: Uses dedicated IAM user with minimal S3 permissions
+- **Credentials**: Cleared from Docker image after data preparation
 
-You can manually trigger workflows from the Actions tab:
+## Deployment Architecture
 
-1. Go to the Actions tab in your repository
-2. Select the workflow you want to run
-3. Click "Run workflow"
-4. Fill in any required inputs
-5. Click "Run workflow" to start
+**RAW Labs Workflow:**
+```
+GitHub Actions → ECR → AWS App Runner → Health Check → Integration Test
+```
 
-## Deployment Configuration
-
-The deployment workflow uses these settings (defined in `deploy.yml`):
-- **AWS Region**: Configured in deployment/config.env
-- **AWS Account**: Configured in deployment/config.env  
-- **ECR Repository**: Configured in deployment/config.env
-- **App Runner Service**: Configured in deployment/config.env
-
-To modify these, edit your `deployment/config.env` file with your project-specific values.
-
-## Best Practices
-
-1. **Always test locally first**: Run `./scripts/run_tests.sh` before pushing
-2. **Use pull requests**: Tests run automatically on PRs to catch issues early
-3. **Tag releases**: Use semantic versioning (v1.0.0, v1.1.0, etc.)
-4. **Monitor deployments**: Check the Actions tab for deployment status
-5. **Review logs**: Download test artifacts if tests fail
+**For Squirro Integration:**
+- Squirro replaces these workflows with their own EKS-based deployment
+- Uses the same build patterns but different deployment target
+- External system handles ECR → Kubernetes deployment
 
 ## Troubleshooting
 
-### Tests Failing
-- Check if `OPENAI_API_KEY` is set correctly in secrets
-- Ensure submodules are properly initialized
-- Review test logs in the uploaded artifacts
+### Common Issues
+1. **AWS credentials not configured**: Add secrets to repository
+2. **Data download fails**: Check MXCP_DATA_ACCESS credentials
+3. **App Runner deployment fails**: Check service limits and IAM roles
+4. **Health checks fail**: Service may need more time to start
 
-### Deployment Failing
-- Verify AWS credentials are correct and have necessary permissions
-- Check if ECR repository exists
-- Ensure App Runner service is properly configured
-- Review deployment logs in the Actions tab
+### Monitoring
+- **GitHub Actions**: Check workflow logs for build/deploy issues
+- **App Runner**: Monitor service status in AWS console
+- **Health endpoint**: `https://service-url/health`
+- **MCP endpoint**: `https://service-url/mcp`
 
-### Release Failing
-- Ensure version format is correct (vX.Y.Z)
-- Check if the tag already exists
-- Verify you have push permissions to create tags
+## Best Practices
+
+1. **Always test locally first**: Run `just full-pipeline` before pushing
+2. **Monitor deployments**: Watch GitHub Actions and App Runner status
+3. **Check health after deploy**: Verify service responds correctly
+4. **Use manual dispatch**: For controlled deployments to staging/production

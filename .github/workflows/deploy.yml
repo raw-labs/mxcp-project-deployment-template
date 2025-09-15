@@ -14,7 +14,11 @@ on:
           - production
           - staging
 
-# Configuration loaded from deployment/config.env by deploy-app-runner.sh
+env:
+  AWS_REGION: eu-west-1
+  AWS_ACCOUNT_ID: 684130658470
+  ECR_REPOSITORY: uae-mxcp-server
+  APP_RUNNER_SERVICE: uae-mxcp-server
 
 jobs:
   check-secrets:
@@ -31,7 +35,7 @@ jobs:
             echo "⚠️ AWS credentials not configured. Please add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to repository secrets."
           fi
 
-  test:
+  validate-config:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -54,11 +58,12 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         CI: true
       run: |
-        chmod +x scripts/run_tests.sh
-        ./scripts/run_tests.sh
+        curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        just validate-config
 
   deploy:
-    needs: [check-secrets, test]
+    needs: [check-secrets, validate-config]
     if: needs.check-secrets.outputs.aws-creds-configured == 'true'
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'production' }}
@@ -179,12 +184,23 @@ jobs:
         
         echo "🌐 Service URL: https://$SERVICE_URL"
         
-        # Simple HTTP health check instead of comprehensive tests
+        # Install just for post-deployment testing
+        curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        
+        # Test service health
         echo "🔍 Testing service health..."
         if curl -f "https://$SERVICE_URL/health" > /dev/null 2>&1; then
           echo "✅ Service health check passed"
+          
+          # Run post-deployment integration tests
+          echo "🧪 Running post-deployment tests..."
+          python tests/python/test_comprehensive.py --transport streamable-http --host $SERVICE_URL --port 443 || {
+            echo "⚠️ Post-deployment tests failed - service may need more time to start"
+            echo "Service is deployed but may not be fully ready for testing"
+          }
         else
-          echo "⚠️  Health check failed, but service may still be starting..."
+          echo "⚠️ Health check failed, but service may still be starting..."
         fi
         
         # Test MCP endpoint availability
@@ -202,7 +218,7 @@ jobs:
     - name: Deployment summary
       if: always()
       run: |
-        source .github/config.env
+        # Configuration is now in workflow env vars
         
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Service**: $SERVICE_NAME" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,92 @@
+# Environment Variables for {{PROJECT_NAME}} MXCP Server
+
+This guide shows how to configure environment variables for Squirro's deployment of {{PROJECT_NAME}} MXCP Server.
+
+## Squirro Workflow Overview
+
+**Squirro's Deployment Pattern:**
+1. **GitHub Actions** → Build and push Docker image to ECR
+2. **External deployment system (Flux)** → Automatically detects new ECR images and deploys to Kubernetes
+3. **No manual K8s deployment** → External system handles deployment automatically
+
+## Required Configuration
+
+### Repository Variables (CRITICAL: Use --repo flag)
+
+```bash
+# IMPORTANT: Always use --repo flag to target YOUR forked repository
+gh variable set AWS_ACCOUNT_ID --body "your-squirro-account" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+gh variable set AWS_REGION --body "your-region" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+```
+
+### Repository Secrets (CRITICAL: Use --repo flag)
+
+```bash
+# IMPORTANT: Always use --repo flag to target YOUR forked repository
+gh secret set AWS_ACCESS_KEY_ID --body "your-ci-cd-key" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+gh secret set AWS_SECRET_ACCESS_KEY --body "your-ci-cd-secret" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+gh secret set MXCP_DATA_ACCESS_KEY_ID --body "data-key" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+gh secret set MXCP_DATA_SECRET_ACCESS_KEY --body "data-secret" --repo your-org/{{PROJECT_NAME}}-mxcp-server
+```
+
+**⚠️ CRITICAL**: The `--repo` flag ensures secrets are set in YOUR forked repository, not the upstream RAW repository.
+
+## Data Access Options
+
+**Option 1: Use RAW's data credentials (Recommended)**
+- Use the provided `MXCP_DATA_ACCESS_KEY_ID` and `MXCP_DATA_SECRET_ACCESS_KEY`
+- Access to RAW's S3 bucket with {{PROJECT_NAME}} data
+
+**Option 2: Use your own data source**
+- Modify `scripts/prepare-data-for-build.sh` to use Squirro's data sources
+- Set your own data access credentials if needed
+
+## Deployment Configuration
+
+### deployment/config.env
+```bash
+# Set your AWS account and ECR repository
+AWS_ACCOUNT_ID=your-squirro-account
+AWS_REGION=your-preferred-region
+ECR_REPOSITORY={{PROJECT_NAME}}-mxcp-server-squirro
+APP_RUNNER_SERVICE={{PROJECT_NAME}}-mxcp-server-squirro
+```
+
+## External Deployment System Integration
+
+### What Your External System Does
+
+**Automatic Deployment:**
+- **Monitors**: Your ECR repository for new images
+- **Detects**: New `latest` tag or specific SHA tags
+- **Deploys**: Automatically updates Kubernetes deployment
+- **Manages**: Rolling updates, health checks, rollbacks
+
+### Expected Container Configuration
+
+**Your external system should deploy containers with:**
+- **Port**: 8000 (container exposes this port)
+- **Health check**: `GET /health` (returns JSON status)
+- **MCP endpoint**: `POST /mcp` (JSON-RPC protocol)
+- **Environment**: Production-ready with proper resource limits
+
+## Troubleshooting
+
+### Secrets Not Set in Correct Repository
+**Problem**: Secrets appear in upstream repository instead of your fork
+**Solution**: Always use `--repo your-org/your-repo-name` flag
+
+### External System Not Detecting Images
+**Problem**: Images pushed to ECR but not deployed
+**Solution**: Check your external system configuration for ECR monitoring
+
+### Build Failures
+**Problem**: GitHub Actions workflow fails
+**Solution**: Check secrets are set correctly with `gh secret list --repo your-org/your-repo-name`
+
+## Support
+
+- **Template questions**: RAW Labs (pavlos@raw-labs.com)
+- **External deployment**: Squirro DevOps team
+- **Proven example**: https://github.com/ppolydoras/uae-mxcp-server-squirro-test
