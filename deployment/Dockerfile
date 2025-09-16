@@ -51,6 +51,9 @@ RUN mkdir -p ./data ./logs
 # Use justfile for flexible data preparation - supports S3, API, or static data
 RUN just prepare-build
 
+# Create symlink for mxcp that tests expect
+RUN mkdir -p .env/bin && ln -s /usr/local/bin/mxcp .env/bin/mxcp
+
 # Run all 3 levels of testing during build
 # This ensures only tested code gets deployed
 RUN just test-all || (echo "❌ Tests failed during Docker build" && exit 1)
