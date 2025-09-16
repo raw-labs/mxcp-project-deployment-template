@@ -1,0 +1,127 @@
+# Environment Variables for {{PROJECT_NAME}} MXCP Server
+
+This document lists all environment variables and secrets required for deploying the {{PROJECT_NAME}} MXCP Server.
+
+## GitHub Repository Configuration
+
+### Repository Variables (Settings → Variables)
+
+Set these as GitHub repository variables for the CI/CD pipeline:
+
+```bash
+# Using GitHub CLI
+gh variable set AWS_ACCOUNT_ID --body "684130658470"
+gh variable set AWS_REGION --body "eu-west-1"
+gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server"
+gh variable set APP_RUNNER_SERVICE --body "{{PROJECT_NAME}}-mxcp-server"
+```
+
+### Repository Secrets (Settings → Secrets)
+
+Set these as GitHub repository secrets:
+
+```bash
+# AWS Deployment Credentials
+gh secret set AWS_ACCESS_KEY_ID --body "your-deployment-key"
+gh secret set AWS_SECRET_ACCESS_KEY --body "your-deployment-secret"
+
+# Data Access Credentials (if downloading data from S3/external sources)
+gh secret set MXCP_DATA_ACCESS_KEY_ID --body "your-data-key"
+gh secret set MXCP_DATA_SECRET_ACCESS_KEY --body "your-data-secret"
+
+# LLM API Keys (optional - for AI functionality)
+gh secret set OPENAI_API_KEY --body "your-openai-key"
+gh secret set ANTHROPIC_API_KEY --body "your-anthropic-key"
+```
+
+## Runtime Environment Variables
+
+These are configured in `deployment/mxcp-user-config.yml` and can be set at runtime:
+
+### Required Variables
+
+| Variable | Description | Example | Secret |
+|----------|-------------|---------|--------|
+| `OPENAI_API_KEY` | OpenAI API key for GPT models | `sk-...` | Yes |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude models | `sk-ant-...` | Yes |
+
+### Optional Variables (Project-Specific)
+
+| Variable | Description | Example | Secret |
+|----------|-------------|---------|--------|
+| `DATABASE_URL` | Database connection string | `postgresql://...` | Yes |
+| `REDIS_URL` | Redis connection string | `redis://...` | Yes |
+| `API_BASE_URL` | External API endpoint | `https://api.example.com` | No |
+| `WEBHOOK_SECRET` | Webhook validation secret | `whsec_...` | Yes |
+
+## Data Source Configuration
+
+Depending on your data strategy:
+
+### Static Data
+No additional environment variables needed - data is included in the repository.
+
+### Downloaded Data (S3)
+- `MXCP_DATA_ACCESS_KEY_ID` - AWS access key for S3 bucket
+- `MXCP_DATA_SECRET_ACCESS_KEY` - AWS secret key for S3 bucket
+
+### Live API Integration
+Configure API credentials in your tool implementations.
+
+## Local Development
+
+For local development, create a `.env` file (DO NOT commit):
+
+```bash
+# Copy from .env.example
+cp .env.example .env
+
+# Edit with your values
+vim .env
+```
+
+## Deployment Verification
+
+After setting up environment variables:
+
+1. **Verify GitHub secrets:**
+   ```bash
+   gh secret list
+   gh variable list
+   ```
+
+2. **Test locally:**
+   ```bash
+   export $(cat .env | xargs)
+   just full-pipeline
+   ```
+
+3. **Deploy:**
+   ```bash
+   git push origin main
+   ```
+
+## Security Best Practices
+
+- ✅ Never commit secrets to the repository
+- ✅ Use GitHub Secrets for sensitive values
+- ✅ Rotate API keys regularly
+- ✅ Use least-privilege AWS IAM roles
+- ✅ Enable audit logging for secret access
+
+## Troubleshooting
+
+### Missing Environment Variables
+Check CloudWatch logs for "environment variable not set" errors.
+
+### Invalid Credentials
+Verify secrets are set correctly and not expired.
+
+### Access Denied
+Check IAM permissions for AWS resources.
+
+## Support
+
+For environment configuration help:
+- **RAW Labs Team**: Use this guide
+- **External Teams**: See `.squirro/ENVIRONMENT-GUIDE.md` for additional guidance

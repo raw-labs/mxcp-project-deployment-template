@@ -12,7 +12,9 @@ set -e
 # {{PROJECT_NAME}}           - Your project name (e.g., "uae-licenses")
 #                             Used in: config.env.template, justfile.template,
 #                                     mxcp-site-docker.yml.template, 
-#                                     profiles-docker.yml.template
+#                                     profiles-docker.yml.template,
+#                                     ENVIRONMENT.md.template,
+#                                     .squirro/ENVIRONMENT-GUIDE.md.template
 #
 # {{AWS_REGION}}            - AWS region (e.g., "eu-west-1")
 #                             Used in: profiles-docker.yml.template
@@ -204,6 +206,23 @@ if safe_copy "deployment/mxcp-user-config.yml.template" "deployment/mxcp-user-co
     print_warning "Remember to set environment variables for API keys in this file"
 fi
 
+# Step 5: Create Environment Documentation
+print_step "Step 5: Creating environment documentation..."
+
+# Create main environment guide
+if safe_copy "ENVIRONMENT.md.template" "ENVIRONMENT.md" "environment documentation"; then
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" ENVIRONMENT.md
+    print_success "Created ENVIRONMENT.md with project-specific variables"
+fi
+
+# Create Squirro-specific environment guide if .squirro directory exists
+if [ -d ".squirro" ] && [ -f ".squirro/ENVIRONMENT-GUIDE.md.template" ]; then
+    if safe_copy ".squirro/ENVIRONMENT-GUIDE.md.template" ".squirro/ENVIRONMENT-GUIDE.md" "Squirro environment guide"; then
+        sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .squirro/ENVIRONMENT-GUIDE.md
+        print_success "Created .squirro/ENVIRONMENT-GUIDE.md for external teams"
+    fi
+fi
+
 # Summary
 echo ""
 print_success "🎉 Project setup complete!"
@@ -220,6 +239,8 @@ echo "- justfile"
 echo "- deployment/mxcp-site-docker.yml"
 echo "- deployment/profiles-docker.yml"
 echo "- deployment/mxcp-user-config.yml"
+echo "- ENVIRONMENT.md"
+[ -f ".squirro/ENVIRONMENT-GUIDE.md" ] && echo "- .squirro/ENVIRONMENT-GUIDE.md"
 echo ""
 echo -e "${BLUE}Project: ${GREEN}$PROJECT_NAME${NC}"
 echo -e "${BLUE}Region:  ${GREEN}$AWS_REGION${NC}"
