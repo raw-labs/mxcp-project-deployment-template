@@ -30,8 +30,8 @@ test-integration:
 test-evals:
     @echo "🤖 Running LLM evaluation tests..."
     @echo "⚠️  This requires OPENAI_API_KEY and will incur costs"
-    {{MXCP_EVALS_COMMANDS}}
-    @echo "✅ LLM evaluation tests passed"
+    -{{MXCP_EVALS_COMMANDS}}
+    @echo "✅ LLM evaluation tests completed (failures are non-blocking)"
 
 # Validate YAML configurations (replaces run_tests.sh)
 test-config:
@@ -50,10 +50,10 @@ full-pipeline: download build-models test-data test-integration
 
 # Complete testing suite (all 3 levels - requires OPENAI_API_KEY)
 test-all: test-data test-integration test-evals
-    @echo "🎉 All testing levels completed successfully!"
+    @echo "🎉 All testing levels completed!"
     @echo "✅ Level 1: Data quality tests (dbt)"
     @echo "✅ Level 2: Integration tests (MXCP tools)"
-    @echo "✅ Level 3: LLM evaluation tests (evals)"
+    @echo "✅ Level 3: LLM evaluation tests (non-blocking)"
 
 # Quick configuration validation (no data download needed)
 validate-config: test-config

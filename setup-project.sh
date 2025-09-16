@@ -163,8 +163,8 @@ if safe_copy "justfile.template" "justfile" "task runner"; then
     sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
     sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
     # Replace eval commands placeholder with multiple eval calls
-    sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals basic_test|g" justfile
-    sed -i "/mxcp evals basic_test/a\\    mxcp evals search_functionality\\n    mxcp evals aggregation_analysis\\n    mxcp evals geographic_analysis\\n    mxcp evals timeseries_analysis\\n    mxcp evals edge_cases" justfile
+    sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals licenses_basic|g" justfile
+    sed -i "/mxcp evals licenses_basic/a\\    mxcp evals search_functionality\\n    mxcp evals aggregation_analysis\\n    mxcp evals geographic_analysis\\n    mxcp evals timeseries_analysis\\n    mxcp evals edge_cases" justfile
     
     print_success "Created justfile with project-specific commands"
     print_warning "Note: Using UAE project commands as defaults. Customize for your data sources if needed."

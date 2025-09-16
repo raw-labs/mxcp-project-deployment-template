@@ -183,13 +183,13 @@ The diagram above shows how the template's components work together:
 
 ```
 mxcp-project-deployment-template/
-├── .github/                    # RAW Labs CI/CD with validations
+├── .github/                    # Stable CI/CD (rarely modified)
 │   ├── workflows/              
-│   │   ├── deploy.yml         # Main deployment pipeline (includes RAW validations)
+│   │   ├── deploy.yml         # Main deployment pipeline
 │   │   ├── test.yml           # PR testing workflow
 │   │   └── release.yml        # Release management
 │   └── scripts/
-│       └── deploy-app-runner.sh  # AWS App Runner deployment for RAW
+│       └── deploy-app-runner.sh # AWS deployment script
 ├── deployment/                 # Customizable configs
 │   ├── config.env.template    # AWS settings
 │   ├── Dockerfile             # Container build
@@ -608,13 +608,6 @@ This template enables standardized deployment of MXCP servers with proven patter
 - **Clean separation** between stable infrastructure and customizable components
 
 ### For RAW Labs Teams
-
-**RAW-Specific Features:**
-- ✅ Automatic validation of AWS_ACCOUNT_ID (warns if not 684130658470)
-- ✅ Automatic validation of AWS_REGION (warns if not eu-west-1)
-- ✅ Required GitHub Variables validation before deployment
-- ✅ Pre-configured for RAW's AWS infrastructure
-- ✅ Built-in AWS App Runner deployment scripts
 
 1. **Create new MXCP project from template:**
 ```bash
