@@ -568,21 +568,23 @@ dbt test
 ```
 
 #### **{{MXCP_EVALS_COMMANDS}}**
-Replace with your MXCP evaluation commands:
+Replace with your MXCP evaluation commands.
+
+⚠️ **Important**: Prefix each command with `-` to make failures non-blocking:
 
 **Example (multiple evals):**
 ```bash
-mxcp evals basic_test
-mxcp evals search_functionality
-mxcp evals aggregation_analysis
-mxcp evals geographic_analysis
-mxcp evals timeseries_analysis
-mxcp evals edge_cases
+-mxcp evals basic_test
+-mxcp evals search_functionality
+-mxcp evals aggregation_analysis
+-mxcp evals geographic_analysis
+-mxcp evals timeseries_analysis
+-mxcp evals edge_cases
 ```
 
 **Example (single eval):**
 ```bash
-mxcp evals my_project_basic
+-mxcp evals my_project_basic
 ```
 
 ### UAE MXCP Server Example
@@ -595,7 +597,7 @@ PROJECT_NAME="uae-licenses"
 DATA_DOWNLOAD_COMMAND="python3 scripts/download_real_data.py --output data/licenses.csv"
 DBT_RUN_COMMAND='dbt run --vars '"'"'{"licenses_file": "data/licenses.csv"}'"'"''
 DBT_TEST_COMMAND='dbt test --vars '"'"'{"licenses_file": "data/licenses.csv"}'"'"''
-MXCP_EVALS_COMMANDS="mxcp evals basic_test\n    mxcp evals search_functionality\n    mxcp evals aggregation_analysis\n    mxcp evals geographic_analysis\n    mxcp evals timeseries_analysis\n    mxcp evals edge_cases"
+MXCP_EVALS_COMMANDS="-mxcp evals basic_test\n    -mxcp evals search_functionality\n    -mxcp evals aggregation_analysis\n    -mxcp evals geographic_analysis\n    -mxcp evals timeseries_analysis\n    -mxcp evals edge_cases"
 ```
 
 ### Available Tasks
