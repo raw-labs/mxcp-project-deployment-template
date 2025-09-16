@@ -20,25 +20,8 @@ models:
 
 # Generic Secrets Configuration
 # Store any project-specific secrets here
-secrets:
-  # Database connections
-  database_url: ${DATABASE_URL}
-  redis_url: ${REDIS_URL}
-  
-  # API Keys for external services
-  stripe_api_key: ${STRIPE_API_KEY}
-  sendgrid_api_key: ${SENDGRID_API_KEY}
-  slack_webhook_url: ${SLACK_WEBHOOK_URL}
-  
-  # OAuth and Authentication
-  google_client_id: ${GOOGLE_CLIENT_ID}
-  google_client_secret: ${GOOGLE_CLIENT_SECRET}
-  jwt_secret: ${JWT_SECRET}
-  
-  # Cloud Services
-  s3_access_key: ${S3_ACCESS_KEY}
-  s3_secret_key: ${S3_SECRET_KEY}
-  
-  # Custom project secrets
-  api_base_url: ${API_BASE_URL}
-  webhook_secret: ${WEBHOOK_SECRET}
+# Examples:
+#   database_url: ${DATABASE_URL}
+#   api_key: ${EXTERNAL_API_KEY}
+#   webhook_secret: ${WEBHOOK_SECRET}
+secrets: {}
