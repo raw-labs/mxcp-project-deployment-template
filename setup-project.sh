@@ -63,6 +63,10 @@ print_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
 # Check if we're in the right directory
 if [ ! -f "deployment/config.env.template" ]; then
     print_error "This script must be run from the project root directory (where deployment/ exists)"
