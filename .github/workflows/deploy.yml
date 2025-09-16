@@ -36,6 +36,44 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Validate RAW deployment configuration
+      run: |
+        echo "🔍 Validating RAW Labs deployment configuration..."
+        
+        # Check required GitHub variables are set
+        if [ -z "${{ vars.AWS_ACCOUNT_ID }}" ]; then
+          echo "❌ AWS_ACCOUNT_ID variable not set"
+          exit 1
+        fi
+        
+        if [ -z "${{ vars.AWS_REGION }}" ]; then
+          echo "❌ AWS_REGION variable not set"
+          exit 1
+        fi
+        
+        if [ -z "${{ vars.ECR_REPOSITORY }}" ]; then
+          echo "❌ ECR_REPOSITORY variable not set"
+          exit 1
+        fi
+        
+        if [ -z "${{ vars.APP_RUNNER_SERVICE }}" ]; then
+          echo "❌ APP_RUNNER_SERVICE variable not set"
+          exit 1
+        fi
+        
+        # RAW-specific validations
+        if [ "${{ vars.AWS_ACCOUNT_ID }}" != "684130658470" ]; then
+          echo "⚠️  Warning: AWS_ACCOUNT_ID is not the standard RAW Labs account (684130658470)"
+          echo "   Current value: ${{ vars.AWS_ACCOUNT_ID }}"
+        fi
+        
+        if [ "${{ vars.AWS_REGION }}" != "eu-west-1" ]; then
+          echo "⚠️  Warning: AWS_REGION is not the standard RAW Labs region (eu-west-1)"
+          echo "   Current value: ${{ vars.AWS_REGION }}"
+        fi
+        
+        echo "✅ All required variables are configured"
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
