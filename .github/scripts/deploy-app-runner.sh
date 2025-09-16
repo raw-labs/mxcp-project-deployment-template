@@ -4,19 +4,35 @@ set -e
 # 🚀 Simplified AWS App Runner Deployment Script
 # Assumes Docker image is already built and pushed to ECR by GitHub Actions
 
-# Load configuration from deployment directory (keeps .github stable)
-if [ -f "deployment/config.env" ]; then
+# Load configuration from either location (GitHub Actions or local)
+if [ -f ".github/config.env" ]; then
+    source ".github/config.env"
+    echo "📋 Loaded configuration from .github/config.env (GitHub Actions)"
+elif [ -f "deployment/config.env" ]; then
     source "deployment/config.env"
-    echo "📋 Loaded configuration from deployment/config.env"
+    echo "📋 Loaded configuration from deployment/config.env (local)"
 else
-    echo "⚠️  No deployment/config.env found, using defaults"
+    echo "⚠️  No config.env found, using environment variables or defaults"
 fi
 
-# Default configuration (generic placeholders - override in deployment/config.env)
+# Configuration with validation
 export AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-YOUR_AWS_ACCOUNT_ID}"
 export SERVICE_NAME="${SERVICE_NAME:-your-project-mxcp-server}"
 export ECR_REPOSITORY="${ECR_REPOSITORY:-your-project-mxcp-server}"
+
+# Validate critical configuration
+if [[ "$AWS_ACCOUNT_ID" == "YOUR_AWS_ACCOUNT_ID" ]]; then
+    echo "❌ Error: AWS_ACCOUNT_ID not configured properly"
+    echo "   Please set it in deployment/config.env or as GitHub variable"
+    exit 1
+fi
+
+if [[ "$SERVICE_NAME" == "your-project-mxcp-server" ]]; then
+    echo "❌ Error: SERVICE_NAME not configured properly"
+    echo "   Please set it in deployment/config.env or as GitHub variable APP_RUNNER_SERVICE"
+    exit 1
+fi
 
 # Derived values
 export ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
