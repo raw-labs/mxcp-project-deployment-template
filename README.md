@@ -284,6 +284,9 @@ cd your-new-project
 # - data: Local data files in data/ directory (default)
 # - remote_data: Data downloaded from external sources (S3, etc.)
 # - api: API-based project with no static data or dbt models
+
+# Note: The script automatically removes all .template files and itself after
+# successful setup to keep your project clean
 ```
 
 #### MXCP Configuration
@@ -381,7 +384,15 @@ mxcp init --bootstrap
 # - Basic project structure
 ```
 
-**6. Choose Your Data Strategy**
+**6. Clean Up Template Files (Optional)**
+```bash
+# Remove .template files after customization to keep your project clean
+rm -f justfile.template
+rm -f deployment/*.template
+rm -f ENVIRONMENT.md.template
+```
+
+**7. Choose Your Data Strategy**
 
 The template supports three data patterns:
 
@@ -513,8 +524,8 @@ The justfile implements a comprehensive testing strategy with three levels:
 | Level | Type | Purpose | Cost | Command |
 |-------|------|---------|------|---------|
 | **Level 1** | Data Quality | dbt schema tests, referential integrity | Free | `just test-data` |
-| **Level 2** | Tool Tests | MXCP tools functionality | Free | `just test-tools` |
-| **Level 2** | API Tests | External API integration (API projects) | Free | `just test-api` |
+| **Level 2** | Tool Tests | MXCP tools functionality (`python tests/test.py tool`) | Free | `just test-tools` |
+| **Level 2** | API Tests | External API integration (`python tests/test.py api`) | Free | `just test-api` |
 | **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | `just test-evals` |
 
 ### Template Placeholders
