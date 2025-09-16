@@ -2,6 +2,12 @@
 
 This document lists all environment variables and secrets required for deploying the {{PROJECT_NAME}} MXCP Server.
 
+## Deployment Options
+
+This project supports two deployment patterns:
+- **AWS App Runner** (RAW Labs default) - Direct deployment via GitHub Actions
+- **External Systems** (e.g., Kubernetes/Flux) - Build to ECR, external system handles deployment
+
 ## GitHub Repository Configuration
 
 ### Repository Variables (Settings → Variables)
@@ -10,10 +16,15 @@ Set these as GitHub repository variables for the CI/CD pipeline:
 
 ```bash
 # Using GitHub CLI
-gh variable set AWS_ACCOUNT_ID --body "684130658470"
-gh variable set AWS_REGION --body "eu-west-1"
-gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server"
-gh variable set APP_RUNNER_SERVICE --body "{{PROJECT_NAME}}-mxcp-server"
+# IMPORTANT: If using a fork, always add --repo flag
+gh variable set AWS_ACCOUNT_ID --body "your-aws-account-id" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
+gh variable set AWS_REGION --body "your-aws-region" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
+gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
+gh variable set APP_RUNNER_SERVICE --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
+
+# Example for RAW Labs:
+# gh variable set AWS_ACCOUNT_ID --body "684130658470"
+# gh variable set AWS_REGION --body "eu-west-1"
 ```
 
 ### Repository Secrets (Settings → Secrets)
@@ -101,6 +112,33 @@ After setting up environment variables:
    git push origin main
    ```
 
+## External Deployment Systems (Kubernetes/Flux)
+
+If using an external deployment system instead of App Runner:
+
+### What Your System Should Expect
+
+**Container Configuration:**
+- **Port**: 8000 (health checks and MCP endpoint)
+- **Health check**: `GET /health` returns 200 OK
+- **MCP endpoint**: `POST /mcp` for JSON-RPC protocol
+- **Environment**: Pass runtime secrets via environment variables
+
+### Flux/ArgoCD Integration
+
+Your deployment system will:
+1. Monitor ECR for new images (pushed by GitHub Actions)
+2. Automatically update Kubernetes deployments
+3. Handle rolling updates with health checks
+4. Manage secrets via Kubernetes secrets or external secret operators
+
+### Important Notes for External Teams
+
+- The `APP_RUNNER_SERVICE` variable can be ignored (App Runner specific)
+- Focus on ECR repository configuration
+- Ensure your deployment system has ECR pull permissions
+- Container expects environment variables for all secrets
+
 ## Security Best Practices
 
 - ✅ Never commit secrets to the repository
@@ -108,6 +146,7 @@ After setting up environment variables:
 - ✅ Rotate API keys regularly
 - ✅ Use least-privilege AWS IAM roles
 - ✅ Enable audit logging for secret access
+- ✅ For external systems: Use secret operators (Sealed Secrets, External Secrets)
 
 ## Troubleshooting
 
@@ -123,5 +162,6 @@ Check IAM permissions for AWS resources.
 ## Support
 
 For environment configuration help:
-- **RAW Labs Team**: Use this guide
-- **External Teams**: See `.squirro/ENVIRONMENT-GUIDE.md` for additional guidance
+- **Technical Questions**: Pavlos Polydoras (pavlos@raw-labs.com)
+- **External Deployment**: Your DevOps team
+- **Template Issues**: RAW Labs Support

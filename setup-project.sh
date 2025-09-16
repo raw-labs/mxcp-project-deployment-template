@@ -13,8 +13,7 @@ set -e
 #                             Used in: config.env.template, justfile.template,
 #                                     mxcp-site-docker.yml.template, 
 #                                     profiles-docker.yml.template,
-#                                     ENVIRONMENT.md.template,
-#                                     .squirro/ENVIRONMENT-GUIDE.md.template
+#                                     ENVIRONMENT.md.template
 #
 # {{AWS_REGION}}            - AWS region (e.g., "eu-west-1")
 #                             Used in: profiles-docker.yml.template
@@ -215,13 +214,6 @@ if safe_copy "ENVIRONMENT.md.template" "ENVIRONMENT.md" "environment documentati
     print_success "Created ENVIRONMENT.md with project-specific variables"
 fi
 
-# Create Squirro-specific environment guide if .squirro directory exists
-if [ -d ".squirro" ] && [ -f ".squirro/ENVIRONMENT-GUIDE.md.template" ]; then
-    if safe_copy ".squirro/ENVIRONMENT-GUIDE.md.template" ".squirro/ENVIRONMENT-GUIDE.md" "Squirro environment guide"; then
-        sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .squirro/ENVIRONMENT-GUIDE.md
-        print_success "Created .squirro/ENVIRONMENT-GUIDE.md for external teams"
-    fi
-fi
 
 # Summary
 echo ""
@@ -240,7 +232,6 @@ echo "- deployment/mxcp-site-docker.yml"
 echo "- deployment/profiles-docker.yml"
 echo "- deployment/mxcp-user-config.yml"
 echo "- ENVIRONMENT.md"
-[ -f ".squirro/ENVIRONMENT-GUIDE.md" ] && echo "- .squirro/ENVIRONMENT-GUIDE.md"
 echo ""
 echo -e "${BLUE}Project: ${GREEN}$PROJECT_NAME${NC}"
 echo -e "${BLUE}Region:  ${GREEN}$AWS_REGION${NC}"
