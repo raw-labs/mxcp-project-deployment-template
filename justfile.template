@@ -20,11 +20,17 @@ test-data:
     {{DBT_TEST_COMMAND}}
     @echo "✅ Data quality tests passed"
 
-# Run integration tests
-test-integration:
-    @echo "🔧 Running integration tests..."
-    python tests/python/test_comprehensive.py
-    @echo "✅ Integration tests passed"
+# Run tool tests (Level 2 testing)
+test-tools:
+    @echo "🔧 Running tool tests..."
+    python tests/test.py tool
+    @echo "✅ Tool tests passed"
+
+# Run API tests (for API-based projects)
+test-api:
+    @echo "🔌 Running API tests..."
+    {{API_TEST_COMMAND}}
+    @echo "✅ API tests completed"
 
 # Run LLM evaluation tests (Level 3 testing - requires OPENAI_API_KEY)
 test-evals:
@@ -45,14 +51,15 @@ prepare-build: download build-models
     @echo "✅ Data prepared for Docker build"
 
 # Complete development pipeline (replaces run_etl_and_tests.sh)
-full-pipeline: download build-models test-data test-integration
+full-pipeline: download build-models test-data test-tools
     @echo "🎉 Complete pipeline finished successfully!"
 
 # Complete testing suite (all 3 levels - requires OPENAI_API_KEY)
-test-all: test-data test-integration test-evals
+test-all: test-data test-tools test-api test-evals
     @echo "🎉 All testing levels completed!"
     @echo "✅ Level 1: Data quality tests (dbt)"
-    @echo "✅ Level 2: Integration tests (MXCP tools)"
+    @echo "✅ Level 2: Tool tests (MXCP tools)"
+    @echo "✅ Level 2: API tests (if applicable)"
     @echo "✅ Level 3: LLM evaluation tests (non-blocking)"
 
 # Quick configuration validation (no data download needed)

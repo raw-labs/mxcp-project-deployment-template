@@ -513,7 +513,8 @@ The justfile implements a comprehensive testing strategy with three levels:
 | Level | Type | Purpose | Cost | Command |
 |-------|------|---------|------|---------|
 | **Level 1** | Data Quality | dbt schema tests, referential integrity | Free | `just test-data` |
-| **Level 2** | Integration | MXCP tools functionality, API endpoints | Free | `just test-integration` |
+| **Level 2** | Tool Tests | MXCP tools functionality | Free | `just test-tools` |
+| **Level 2** | API Tests | External API integration (API projects) | Free | `just test-api` |
 | **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | `just test-evals` |
 
 ### Template Placeholders
@@ -573,6 +574,19 @@ dbt test --vars '{"licenses_file": "data/licenses.csv"}'
 dbt test
 ```
 
+#### **{{API_TEST_COMMAND}}**
+Replace with your API test command (for API-based projects).
+
+**For API projects:**
+```bash
+python tests/test.py api
+```
+
+**For data projects (default):**
+```bash
+@echo '📊 Data project - no API tests needed'
+```
+
 #### **{{MXCP_EVALS_COMMANDS}}**
 Replace with your MXCP evaluation commands.
 
@@ -615,9 +629,10 @@ After customization, your justfile will provide these tasks:
 #### **Testing Tasks (3-Tier)**
 - `just test-config` - Validate YAML configurations (instant)
 - `just test-data` - Run dbt data quality tests (Level 1)
-- `just test-integration` - Test MXCP tools functionality (Level 2) 
+- `just test-tools` - Test MXCP tools functionality (Level 2)
+- `just test-api` - Test external API integration (Level 2, API projects)
 - `just test-evals` - Run LLM evaluation tests (Level 3, costs apply)
-- `just test-all` - Run all three testing levels
+- `just test-all` - Run all testing levels
 
 #### **Development Workflows**
 - `just dev` - Standard development pipeline (Levels 1+2, free)

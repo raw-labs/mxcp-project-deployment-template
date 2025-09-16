@@ -32,7 +32,12 @@ set -e
 #
 # {{MXCP_EVALS_COMMANDS}}   - MXCP evaluation test commands
 #                             Used in: justfile.template
-#                             Default: Multiple mxcp evals commands
+#                             Default: mxcp evals (runs all)
+#
+# {{API_TEST_COMMAND}}      - API test command (for API projects)
+#                             Used in: justfile.template
+#                             Default: python tests/test.py api (api projects)
+#                                      @echo message (data projects)
 # =============================================================================
 
 # Colors for output
@@ -201,18 +206,21 @@ if safe_copy "justfile.template" "justfile" "task runner"; then
             sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|@echo '📁 Using local data files from data/ directory'|g" justfile
             sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
             sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+            sed -i "s|{{API_TEST_COMMAND}}|@echo '📊 Data project - no API tests needed'|g" justfile
             ;;
         remote_data)
             # Remote data download (e.g., from S3)
             sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
             sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
             sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+            sed -i "s|{{API_TEST_COMMAND}}|@echo '📊 Data project - no API tests needed'|g" justfile
             ;;
         api)
             # API-based project (no data download or dbt)
             sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|@echo '🔌 API-based project - no data download needed'|g" justfile
             sed -i "s|{{DBT_RUN_COMMAND}}|@echo '🔌 API-based project - no dbt models'|g" justfile
             sed -i "s|{{DBT_TEST_COMMAND}}|@echo '🔌 API-based project - no dbt tests'|g" justfile
+            sed -i "s|{{API_TEST_COMMAND}}|python tests/test.py api|g" justfile
             ;;
     esac
     
@@ -382,7 +390,7 @@ echo -e "${BLUE}Next steps:${NC}"
 echo "1. Run: mxcp init --bootstrap"
 echo "2. Choose your data strategy (see README)"
 echo "3. Review and commit the generated files to git"
-echo "4. Set GitHub repository secrets for deployment"
+echo "4. Set GitHub repository secrets for deployment (see ENVIRONMENT.md)"
 echo "5. Push to trigger deployment: git push origin main"
 echo ""
 echo -e "${BLUE}Files created:${NC}"
@@ -396,3 +404,30 @@ echo ""
 echo -e "${BLUE}Project: ${GREEN}$PROJECT_NAME${NC}"
 echo -e "${BLUE}Region:  ${GREEN}$AWS_REGION${NC}"
 echo -e "${BLUE}Type:    ${GREEN}$PROJECT_TYPE${NC}"
+echo ""
+
+# Step 7: Clean up template files
+print_step "Step 7: Cleaning up template files..."
+
+# Remove all .template files that have been processed
+template_files=(
+    "justfile.template"
+    "deployment/config.env.template"
+    "deployment/mxcp-site-docker.yml.template"
+    "deployment/profiles-docker.yml.template"
+    "deployment/mxcp-user-config.yml.template"
+    "ENVIRONMENT.md.template"
+)
+
+for template in "${template_files[@]}"; do
+    if [ -f "$template" ]; then
+        rm -f "$template"
+        print_info "Removed $template"
+    fi
+done
+
+# Remove setup script itself
+rm -f "$0"
+print_info "Removed setup script"
+
+print_success "Template files cleaned up"
