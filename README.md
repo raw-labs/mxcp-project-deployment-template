@@ -164,10 +164,6 @@ The diagram above shows how the template's components work together:
 
 ## Usage
 
-### For Existing MXCP Projects
-
-See [MIGRATION-GUIDE.md](MIGRATION-GUIDE.md) for detailed instructions on applying this template to existing projects.
-
 ### For New MXCP Projects
 
 #### Quick Setup (Automated)
@@ -276,6 +272,58 @@ mkdir -p scripts/
 # Set GitHub repository secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 # Push to trigger automatic deployment
 git push origin main
+```
+
+### For Existing MXCP Projects
+
+#### Scenario 1: Project Without CI/CD
+
+If you have an MXCP project with just core files but no deployment:
+
+```bash
+# Copy template infrastructure
+cd your-existing-project
+cp -r /path/to/template/.github .
+cp -r /path/to/template/deployment .
+cp /path/to/template/justfile.template .
+cp /path/to/template/setup-project.sh .
+
+# Run setup
+./setup-project.sh your-project-name
+
+# Configure and deploy
+git add .
+git commit -m "Add deployment infrastructure"
+git push origin main
+```
+
+#### Scenario 2: Project With Different CI/CD
+
+For selective adoption:
+
+```bash
+# Compare components before replacing
+diff -r .github/workflows /path/to/template/.github/workflows
+
+# Adopt what makes sense
+cp /path/to/template/.github/workflows/deploy.yml .github/workflows/
+cp /path/to/template/deployment/Dockerfile deployment/
+
+# Or run full setup for complete standardization
+./setup-project.sh your-project-name
+```
+
+#### Scenario 3: External Teams (Squirro)
+
+```bash
+# Copy Squirro integration
+cp -r /path/to/template/.squirro .
+
+# Run setup
+./.squirro/setup-for-squirro.sh
+
+# Use merge script for updates
+./.squirro/merge-from-raw.sh
 ```
 
 ## Template Philosophy
@@ -528,6 +576,106 @@ Each project should document its specific requirements:
 - [ ] Deploy with `git push origin main`
 - [ ] Verify health endpoint responds
 - [ ] Check CloudWatch logs for audit trail
+
+## Secret Management
+
+MXCP supports multiple secret management solutions:
+
+### HashiCorp Vault
+```bash
+# Set Vault address and token
+export VAULT_ADDR="https://vault.example.com"
+export VAULT_TOKEN="your-vault-token"
+
+# Store secrets
+vault kv put secret/mxcp/{{project}} \
+  OPENAI_API_KEY="sk-..." \
+  ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+### 1Password Connect
+```bash
+# Set service account token
+export OP_SERVICE_ACCOUNT_TOKEN="your-token"
+# MXCP can reference op:// paths in config
+```
+
+### GitHub Secrets (Recommended for CI/CD)
+```bash
+gh secret set OPENAI_API_KEY --body "sk-..."
+gh secret set AWS_ACCESS_KEY_ID --body "AKIA..."
+```
+
+## Monitoring and Observability
+
+### Health Monitoring
+- **Endpoint**: `GET /health` returns JSON status
+- **Frequency**: Configure based on your SLA (default: 30s)
+- **Timeout**: Keep low for fast failure detection (5s)
+
+### Audit Logs
+
+MXCP generates structured audit logs in JSONL format:
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "session_id": "uuid",
+  "trace_id": "otel-trace-id", 
+  "operation_name": "tool_name",
+  "caller": "user_identifier",
+  "duration_ms": 145,
+  "status": "success"
+}
+```
+
+**Log Shipping Options:**
+- CloudWatch Logs (AWS native)
+- ELK Stack (Elasticsearch, Logstash, Kibana)
+- Splunk
+- Datadog
+- Grafana Loki
+
+**Log Rotation:**
+```bash
+# /etc/logrotate.d/mxcp
+/app/logs/*.jsonl {
+    daily
+    rotate 30
+    compress
+    notifempty
+}
+```
+
+### Metrics and Dashboards
+
+Key metrics to monitor:
+- Request latency (p50, p90, p99)
+- Error rate by tool
+- Token usage (for LLM tools)
+- Memory/CPU utilization
+- Active sessions
+
+## Backup and Recovery
+
+MXCP is mostly stateless, but consider backing up:
+
+1. **Audit Logs** - Historical usage data
+2. **Configuration** - Your customized YAML files (in Git)
+3. **Data** - If using local data files
+
+Recovery is straightforward:
+```bash
+# Restore from Git
+git clone your-repo
+./setup-project.sh your-project
+
+# Restore secrets from vault
+vault kv get secret/mxcp/your-project
+
+# Deploy
+git push origin main
+```
 
 ## Support
 
