@@ -5,6 +5,9 @@ dbt:
   enabled: true
 sql_tools:
   enabled: true
+# Uncomment and list secrets when your tools need them:
+# secrets:
+#   - example-secret
 profiles:
   prod:
     duckdb:

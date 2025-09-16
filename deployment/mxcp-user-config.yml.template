@@ -18,9 +18,15 @@ models:
     api_key: ${OPENAI_API_KEY}
     model: gpt-3.5-turbo
 
-# Project-Specific Configuration
-# Add any additional MXCP configuration here as needed
-# For example:
-#   - Additional model configurations
-#   - Transport settings
-#   - Tool-specific settings
+# Project configuration with custom secrets example
+projects:
+  {{PROJECT_NAME}}-mxcp:
+    profiles:
+      prod:
+        secrets:
+          - name: "example-secret"
+            type: "custom"
+            parameters:
+              param_a: "value_a"
+              param_b: "value_b"
+        # Add more project-specific configuration here as needed
