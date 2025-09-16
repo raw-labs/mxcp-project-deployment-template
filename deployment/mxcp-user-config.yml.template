@@ -14,10 +14,9 @@ models:
     gpt-4o:
       type: openai
       api_key: ${OPENAI_API_KEY}
-    gpt-4.1:
+    gpt-3.5-turbo:
       type: openai
       api_key: ${OPENAI_API_KEY}
-      model: gpt-4o  # Map to gpt-4o since gpt-4.1 doesn't exist
 
 # Project configuration with custom secrets example
 projects:

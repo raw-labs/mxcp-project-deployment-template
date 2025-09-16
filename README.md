@@ -291,11 +291,7 @@ models:
     gpt-3.5-turbo:
       type: openai
       api_key: ${OPENAI_API_KEY}
-    # Add custom model mappings if needed:
-    gpt-4.1:
-      type: openai
-      api_key: ${OPENAI_API_KEY}
-      model: gpt-4o      # Map to actual model
+    # Add other OpenAI models as needed (claude-3-opus, etc.)
 
 # Project secrets configuration
 projects:
@@ -688,7 +684,10 @@ Error: Invalid user config: Additional properties are not allowed
 Error: Model 'gpt-4.1' not configured in user config
 ```
 **Cause**: Eval tests reference a model not in config
-**Fix**: Add the model to `mxcp-user-config.yml` or map it to an existing model
+**Fix**: Either:
+1. Add the model to `mxcp-user-config.yml` (if it's a real model)
+2. Update the eval test to use an existing model (e.g., change gpt-4.1 to gpt-4o)
+3. Make the eval command non-blocking with `-` prefix
 
 ### CI/CD Issues
 
