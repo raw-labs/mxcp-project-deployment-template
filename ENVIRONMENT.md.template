@@ -22,9 +22,11 @@ gh variable set AWS_REGION --body "your-aws-region" [--repo your-org/{{PROJECT_N
 gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 gh variable set APP_RUNNER_SERVICE --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 
-# Example for RAW Labs:
+# Example for RAW Labs (ALL FOUR are required!):
 # gh variable set AWS_ACCOUNT_ID --body "684130658470"
 # gh variable set AWS_REGION --body "eu-west-1"
+# gh variable set ECR_REPOSITORY --body "uae-licenses-mxcp-server"
+# gh variable set APP_RUNNER_SERVICE --body "uae-licenses-mxcp-server"
 ```
 
 ### Repository Secrets (Settings → Secrets)

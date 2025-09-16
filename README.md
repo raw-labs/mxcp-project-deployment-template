@@ -221,7 +221,7 @@ mxcp-project-deployment-template/
 
 **GitHub Variables** (Settings → Secrets and variables → Actions → Variables):
 ```bash
-# AWS deployment configuration
+# AWS deployment configuration (ALL FOUR are required!)
 gh variable set AWS_ACCOUNT_ID --body "684130658470"    # Your AWS account ID
 gh variable set AWS_REGION --body "eu-west-1"           # Your AWS region
 gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"

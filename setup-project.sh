@@ -200,7 +200,7 @@ if safe_copy "deployment/profiles-docker.yml.template" "deployment/profiles-dock
     
     # If dbt_project.yml exists, update the profile name to match
     if [ -f "dbt_project.yml" ]; then
-        print_info "Found dbt_project.yml - updating profile name to match..."
+        print_step "Found dbt_project.yml - updating profile name to match..."
         # Create the new profile name
         NEW_PROFILE="${PROJECT_NAME}-mxcp"
         # Update the profile line in dbt_project.yml
