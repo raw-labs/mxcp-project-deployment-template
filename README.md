@@ -269,9 +269,8 @@ cd your-new-project
 ./setup-project.sh finance-demo
 ./setup-project.sh uae-licenses us-west-2
 
-# ⚠️ dbt Profile Note: If using dbt, ensure project name matches your profile
-# For profile 'uaeme-licenses-mxcp' → use: ./setup-project.sh uaeme-licenses
-# For profile 'vertec-mxcp' → use: ./setup-project.sh vertec
+# ℹ️ dbt Integration: The script automatically updates dbt_project.yml 
+# to use profile '{{PROJECT_NAME}}-mxcp' matching the generated profiles.yml
 ```
 
 #### Manual Setup (Step by Step)
@@ -454,10 +453,8 @@ Replace with your project name (e.g., "uae-licenses", "finance-demo"):
 sed -i "s/{{PROJECT_NAME}}/your-project/g" justfile
 ```
 
-> **⚠️ Important for dbt users**: The `{{PROJECT_NAME}}` is used to generate the dbt profile name as `{{PROJECT_NAME}}-mxcp` in `profiles-docker.yml`. 
-> Make sure this matches the profile name in your `dbt_project.yml`:
-> - If `dbt_project.yml` has `profile: uaeme-licenses-mxcp`, use PROJECT_NAME="uaeme-licenses"
-> - If `dbt_project.yml` has `profile: vertec-mxcp`, use PROJECT_NAME="vertec"
+> **ℹ️ dbt Integration**: The setup script automatically creates a dbt profile named `{{PROJECT_NAME}}-mxcp` 
+> and updates your `dbt_project.yml` to match. No manual synchronization needed!
 
 #### **{{DATA_DOWNLOAD_COMMAND}}**
 Replace with your data download command:

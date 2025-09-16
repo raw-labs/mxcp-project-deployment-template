@@ -197,6 +197,19 @@ fi
 if safe_copy "deployment/profiles-docker.yml.template" "deployment/profiles-docker.yml" "dbt profiles"; then
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{AWS_REGION}}/$AWS_REGION/g" deployment/profiles-docker.yml
     print_success "Created deployment/profiles-docker.yml"
+    
+    # If dbt_project.yml exists, update the profile name to match
+    if [ -f "dbt_project.yml" ]; then
+        print_info "Found dbt_project.yml - updating profile name to match..."
+        # Create the new profile name
+        NEW_PROFILE="${PROJECT_NAME}-mxcp"
+        # Update the profile line in dbt_project.yml
+        if sed -i "s/^profile:.*/profile: $NEW_PROFILE/" dbt_project.yml; then
+            print_success "Updated dbt_project.yml profile to: $NEW_PROFILE"
+        else
+            print_warning "Could not update dbt_project.yml - please manually set profile: $NEW_PROFILE"
+        fi
+    fi
 fi
 
 # Copy MXCP user configuration
