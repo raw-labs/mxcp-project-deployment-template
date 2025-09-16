@@ -1,78 +1,85 @@
-# Squirro Integration for UAE MXCP Server
+# Squirro Integration Directory
 
-This directory contains Squirro-specific tools and configurations for deploying the UAE MXCP Server in Squirro's infrastructure.
+This directory contains templates and tools for deploying MXCP projects in Squirro's infrastructure.
 
-## Overview
+## ⚠️ Important: Template Files
 
-**Squirro's Deployment Workflow:**
+Most files in this directory are **TEMPLATES** that contain placeholders. They must be customized before use:
+- `setup-for-squirro.sh.template` - Contains {{PROJECT_NAME}} placeholder
+- `ENVIRONMENT-GUIDE.md.template` - Project-specific deployment guide
+- `README.md.template` - Project-specific README for Squirro teams
+- `workflows/build-and-push-to-ecr.yml.template` - ECR deployment workflow
+
+## Purpose
+
+This directory provides:
+1. **Templates** for Squirro-specific deployment configuration
+2. **Scripts** to manage the integration between RAW Labs and Squirro repositories
+3. **Documentation** for Squirro teams working with MXCP projects
+
+## Workflow Overview
+
+**Squirro's Deployment Pattern:**
 1. **GitHub Actions** → Build and push Docker image to Squirro's ECR
-2. **External deployment system** → Automatically detects new ECR images and deploys to Kubernetes
-3. **No manual K8s deployment** → Squirro's system handles deployment automatically
+2. **External system** → Automatically detects new ECR images
+3. **Kubernetes** → Deploys the new image automatically
 
-## Files in this Directory
+## How to Use These Templates
 
-### setup-for-squirro.sh.template
-- **Purpose**: Template for one-time setup when Squirro first forks this repository
-- **What it does**: Configures the repository for Squirro's environment
-- **When to run**: Once, after forking from RAW Labs (copy and customize first)
+### For New Projects
 
-### merge-from-raw.sh  
-- **Purpose**: Get updates from RAW Labs while preserving Squirro configurations
-- **What it does**: Safely merges RAW's updates without overwriting Squirro customizations
-- **When to run**: When RAW Labs releases updates
-
-## Squirro Customization Points
-
-**Required customizations for Squirro environment:**
-
-### 1. deployment/config.env
+1. **Copy and customize the setup script:**
 ```bash
-# Set Squirro's AWS account and ECR repository
-AWS_ACCOUNT_ID=your-squirro-account
-AWS_REGION=your-region
-ECR_REPOSITORY=uae-mxcp-server-squirro
+cp .squirro/setup-for-squirro.sh.template .squirro/setup-for-squirro.sh
+# Replace {{PROJECT_NAME}} with your actual project name
+sed -i 's/{{PROJECT_NAME}}/your-project-name/g' .squirro/setup-for-squirro.sh
 ```
 
-### 2. GitHub Repository Configuration
-**Variables** (Settings → Variables):
-- `AWS_ACCOUNT_ID` - Your AWS account
-- `AWS_REGION` - Your preferred region  
-- `ECR_REPOSITORY` - Your ECR repository name
-
-**Secrets** (Settings → Secrets):
-- `AWS_ACCESS_KEY_ID` - Your CI/CD access key
-- `AWS_SECRET_ACCESS_KEY` - Your CI/CD secret key
-- `MXCP_DATA_ACCESS_KEY_ID` - Data access (optional - can use RAW's)
-- `MXCP_DATA_SECRET_ACCESS_KEY` - Data access secret (optional)
-
-### 3. Data Sources (Optional)
-**scripts/prepare-data-for-build.sh:**
-- Default: Downloads from RAW's S3 bucket
-- Option: Customize for Squirro's data sources
-
-## Deployment Workflow
-
-### Development Cycle
-1. **Develop**: Make changes to UAE MXCP server
-2. **Test**: Run `just full-pipeline` locally  
-3. **Push**: `git push origin main`
-4. **GitHub Actions**: Builds and pushes to ECR automatically
-5. **External system**: Detects new image and deploys to K8s automatically
-
-### Getting RAW Updates
+2. **Run the setup script:**
 ```bash
-# When RAW Labs releases updates
+./.squirro/setup-for-squirro.sh
+```
+
+3. **Customize the generated files** for your environment (AWS account, ECR repo, etc.)
+
+### For Ongoing Maintenance
+
+Use `merge-from-raw.sh` to safely merge updates from RAW Labs while preserving your customizations:
+```bash
 ./.squirro/merge-from-raw.sh
-
-# Test the merged changes
-just full-pipeline
-
-# Push to trigger automatic deployment
-git push origin main
 ```
+
+## Files in This Directory
+
+### Templates (must be customized)
+- `setup-for-squirro.sh.template` - Initial setup script template
+- `ENVIRONMENT-GUIDE.md.template` - Deployment guide for your team
+- `README.md.template` - Project-specific README for Squirro
+- `workflows/build-and-push-to-ecr.yml.template` - GitHub Actions workflow
+
+### Working Scripts (use as-is)
+- `merge-from-raw.sh` - Merge updates from RAW Labs
+
+## Required Customizations
+
+When using these templates for your MXCP project:
+
+1. **AWS Configuration** (`deployment/config.env`):
+   - AWS_ACCOUNT_ID
+   - AWS_REGION
+   - ECR_REPOSITORY
+
+2. **GitHub Secrets**:
+   - AWS_ACCESS_KEY_ID
+   - AWS_SECRET_ACCESS_KEY
+   - MXCP_DATA_ACCESS_KEY_ID (if using RAW's data)
+   - MXCP_DATA_SECRET_ACCESS_KEY (if using RAW's data)
+
+3. **Workflow Files**:
+   - Update cluster names, namespaces, and deployment configurations
 
 ## Support
 
-- **MXCP issues**: RAW Labs (pavlos@raw-labs.com)
-- **Integration questions**: RAW Labs Support
-- **Infrastructure issues**: Squirro DevOps team
+- **Template issues**: RAW Labs (pavlos@raw-labs.com)
+- **MXCP questions**: RAW Labs Support
+- **Squirro infrastructure**: Your DevOps team
