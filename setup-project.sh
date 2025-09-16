@@ -214,6 +214,7 @@ fi
 
 # Copy MXCP user configuration
 if safe_copy "deployment/mxcp-user-config.yml.template" "deployment/mxcp-user-config.yml" "MXCP user configuration"; then
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" deployment/mxcp-user-config.yml
     print_success "Created deployment/mxcp-user-config.yml"
     print_warning "Remember to set environment variables for API keys in this file"
 fi
