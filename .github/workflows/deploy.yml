@@ -73,42 +73,42 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+        aws-region: ${{ vars.AWS_REGION }}
     
     - name: Set up environment
       run: |
         # App Runner deployment will be handled in separate step
         
         # Create config file for App Runner deployment script
-        echo "AWS_ACCOUNT_ID=${{ env.AWS_ACCOUNT_ID }}" > .github/config.env
-        echo "AWS_REGION=${{ env.AWS_REGION }}" >> .github/config.env
-        echo "SERVICE_NAME=${{ env.APP_RUNNER_SERVICE }}" >> .github/config.env
-        echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}" >> .github/config.env
+        echo "AWS_ACCOUNT_ID=${{ vars.AWS_ACCOUNT_ID }}" > .github/config.env
+        echo "AWS_REGION=${{ vars.AWS_REGION }}" >> .github/config.env
+        echo "SERVICE_NAME=${{ vars.APP_RUNNER_SERVICE }}" >> .github/config.env
+        echo "ECR_REPOSITORY=${{ vars.ECR_REPOSITORY }}" >> .github/config.env
     
     
     - name: Build and push Docker image
       run: |
         # Login to ECR
-        aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
-        docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+        aws ecr get-login-password --region ${{ vars.AWS_REGION }} | \
+        docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
         
         # Create ECR repository if it doesn't exist
-        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
-        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true
+        aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY }} --region ${{ vars.AWS_REGION }} || \
+        aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY }} --region ${{ vars.AWS_REGION }} --image-scanning-configuration scanOnPush=true
         
         # Build from project root with deployment/Dockerfile and data credentials
         docker build -f deployment/Dockerfile \
           --build-arg MXCP_DATA_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }} \
           --build-arg MXCP_DATA_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }} \
-          -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
+          -t ${{ vars.ECR_REPOSITORY }}:${{ github.sha }} .
         
         # Tag for ECR
-        docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-        docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+        docker tag ${{ vars.ECR_REPOSITORY }}:${{ github.sha }} ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+        docker tag ${{ vars.ECR_REPOSITORY }}:${{ github.sha }} ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
         
         # Push to ECR
-        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
+        docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
+        docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
     
     - name: Deploy to AWS App Runner
       run: |
@@ -120,9 +120,9 @@ jobs:
         echo "📊 Monitoring App Runner service creation/update..."
         
         # Discover service ARN dynamically by name (ARN changes when service is recreated)
-        echo "🔍 Finding service ARN for: ${{ env.APP_RUNNER_SERVICE }}"
-        SERVICE_ARN=$(aws apprunner list-services --region ${{ env.AWS_REGION }} \
-          --query "ServiceSummaryList[?ServiceName=='${{ env.APP_RUNNER_SERVICE }}'].ServiceArn | [0]" \
+        echo "🔍 Finding service ARN for: ${{ vars.APP_RUNNER_SERVICE }}"
+        SERVICE_ARN=$(aws apprunner list-services --region ${{ vars.AWS_REGION }} \
+          --query "ServiceSummaryList[?ServiceName=='${{ vars.APP_RUNNER_SERVICE }}'].ServiceArn | [0]" \
           --output text)
         
         if [ "$SERVICE_ARN" == "None" ] || [ -z "$SERVICE_ARN" ]; then
@@ -176,7 +176,7 @@ jobs:
         
         # Get service URL
         SERVICE_URL=$(aws apprunner describe-service \
-          --service-arn "arn:aws:apprunner:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:service/${{ env.APP_RUNNER_SERVICE }}" \
+          --service-arn "arn:aws:apprunner:${{ vars.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ vars.APP_RUNNER_SERVICE }}" \
           --query 'Service.ServiceUrl' --output text)
         
         echo "🌐 Service URL: https://$SERVICE_URL"
@@ -216,15 +216,15 @@ jobs:
     - name: Deployment summary
       if: always()
       run: |
-        # Configuration is now in workflow env vars
+        # Configuration from GitHub variables
         
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-        echo "- **Service**: $SERVICE_NAME" >> $GITHUB_STEP_SUMMARY
-        echo "- **Region**: $AWS_REGION" >> $GITHUB_STEP_SUMMARY
+        echo "- **Service**: ${{ vars.APP_RUNNER_SERVICE }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: ${{ vars.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
         
         # Get service URL if deployment succeeded
-        if SERVICE_URL=$(aws apprunner describe-service --service-arn "arn:aws:apprunner:${AWS_REGION}:${AWS_ACCOUNT_ID}:service/${SERVICE_NAME}" --query 'Service.ServiceUrl' --output text 2>/dev/null); then
+        if SERVICE_URL=$(aws apprunner describe-service --service-arn "arn:aws:apprunner:${{ vars.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ vars.APP_RUNNER_SERVICE }}" --query 'Service.ServiceUrl' --output text 2>/dev/null); then
           echo "- **Service URL**: https://$SERVICE_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **MCP Endpoint**: https://$SERVICE_URL/mcp" >> $GITHUB_STEP_SUMMARY
         fi

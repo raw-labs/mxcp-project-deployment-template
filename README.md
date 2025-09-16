@@ -217,8 +217,18 @@ mxcp-project-deployment-template/
 | **GitHub Account** | CI/CD and version control | [GitHub Signup](https://github.com/join) |
 | **IAM Role** | `AppRunnerECRAccessRole` | See ENVIRONMENT.md |
 
-### 🔑 GitHub Secrets Required
+### 🔑 GitHub Configuration Required
 
+**GitHub Variables** (Settings → Secrets and variables → Actions → Variables):
+```bash
+# AWS deployment configuration
+gh variable set AWS_ACCOUNT_ID --body "684130658470"    # Your AWS account ID
+gh variable set AWS_REGION --body "eu-west-1"           # Your AWS region
+gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
+gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
+```
+
+**GitHub Secrets** (Settings → Secrets and variables → Actions → Secrets):
 ```bash
 # Deployment credentials
 gh secret set AWS_ACCESS_KEY_ID
