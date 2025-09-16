@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mxcp-dev:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile
+      args:
+        MXCP_DATA_ACCESS_KEY_ID: ${MXCP_DATA_ACCESS_KEY_ID}
+        MXCP_DATA_SECRET_ACCESS_KEY: ${MXCP_DATA_SECRET_ACCESS_KEY}
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    volumes:
+      # Mount local tools for development
+      - ./tools:/app/tools
+      - ./mxcp-site.yml:/app/mxcp-site.yml
+      # Mount logs for debugging
+      - ./logs:/app/logs
+    command: /app/start.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

@@ -16,7 +16,8 @@ fi
 # Check if upstream remote exists
 if ! git remote | grep -q "upstream"; then
     echo "🔗 Adding upstream remote..."
-    git remote add upstream https://github.com/raw-labs/uae-mxcp-server.git
+    # Replace with your RAW Labs project repository
+    git remote add upstream https://github.com/raw-labs/YOUR-PROJECT-mxcp-server.git
 fi
 
 # Fetch latest from upstream

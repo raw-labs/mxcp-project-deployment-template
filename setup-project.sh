@@ -33,33 +33,92 @@ if [ ! -f "deployment/config.env.template" ]; then
     exit 1
 fi
 
-# Get project name
-if [ -z "$1" ]; then
+# Parse arguments
+FORCE=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --force)
+            FORCE=true
+            shift
+            ;;
+        *)
+            if [ -z "$PROJECT_NAME" ]; then
+                PROJECT_NAME="$1"
+            elif [ -z "$AWS_REGION" ]; then
+                AWS_REGION="$1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Show usage if no project name
+if [ -z "$PROJECT_NAME" ]; then
     echo -e "${BLUE}🚀 MXCP Project Template Setup${NC}"
     echo ""
-    echo "Usage: $0 PROJECT_NAME [AWS_REGION]"
+    echo "Usage: $0 [--force] PROJECT_NAME [AWS_REGION]"
+    echo ""
+    echo "Options:"
+    echo "  --force    Overwrite existing files without prompting"
     echo ""
     echo "Examples:"
     echo "  $0 finance-demo"
     echo "  $0 uae-licenses us-west-2"
+    echo "  $0 --force my-project eu-central-1"
     echo ""
     exit 1
 fi
 
-PROJECT_NAME="$1"
-AWS_REGION="${2:-eu-west-1}"  # Default to RAW Labs region
+# Validate project name (alphanumeric and hyphens only)
+if ! [[ "$PROJECT_NAME" =~ ^[a-zA-Z0-9-]+$ ]]; then
+    print_error "Invalid project name. Use only letters, numbers, and hyphens."
+    exit 1
+fi
+
+# Set default region if not provided
+AWS_REGION="${AWS_REGION:-eu-west-1}"
+
+# Validate AWS region format
+if ! [[ "$AWS_REGION" =~ ^[a-z]{2}-[a-z]+-[0-9]+$ ]]; then
+    print_warning "AWS region format looks incorrect: $AWS_REGION"
+    read -p "Continue anyway? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
 
 print_step "Setting up MXCP project: $PROJECT_NAME"
 echo "AWS Region: $AWS_REGION"
 echo ""
 
+# Function to safely copy file with overwrite check
+safe_copy() {
+    local source="$1"
+    local dest="$2"
+    local desc="$3"
+    
+    if [ -f "$dest" ] && [ "$FORCE" != "true" ]; then
+        print_warning "$dest already exists"
+        read -p "Overwrite? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_warning "Skipped $desc"
+            return 1
+        fi
+    fi
+    
+    cp "$source" "$dest"
+    return 0
+}
+
 # Step 2: Customize Configuration
 print_step "Step 2: Customizing deployment configuration..."
 
-cp deployment/config.env.template deployment/config.env
-sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" deployment/config.env
-
-print_success "Created deployment/config.env with project name: $PROJECT_NAME"
+if safe_copy "deployment/config.env.template" "deployment/config.env" "deployment configuration"; then
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" deployment/config.env
+    print_success "Created deployment/config.env with project name: $PROJECT_NAME"
+fi
 
 # Step 3: Setup Task Runner
 print_step "Step 3: Setting up task runner..."

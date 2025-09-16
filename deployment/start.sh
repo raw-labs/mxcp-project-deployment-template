@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Starting UAE MXCP Server with health endpoint..."
+echo "Starting MXCP Server with health endpoint..."
 
 # Start MXCP server on port 8001 in the background
 mxcp serve --transport streamable-http --port 8001 --profile prod &
