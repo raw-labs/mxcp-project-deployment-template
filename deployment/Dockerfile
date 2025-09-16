@@ -54,6 +54,9 @@ RUN just prepare-build
 # Create symlink for mxcp that tests expect
 RUN mkdir -p .env/bin && ln -s /usr/local/bin/mxcp .env/bin/mxcp
 
+# Set MXCP config path for tests (running as root during build)
+ENV MXCP_CONFIG_PATH=/home/mxcp/.mxcp/config.yml
+
 # Run all 3 levels of testing during build
 # This ensures only tested code gets deployed
 RUN just test-all || (echo "❌ Tests failed during Docker build" && exit 1)
@@ -62,6 +65,7 @@ RUN just test-all || (echo "❌ Tests failed during Docker build" && exit 1)
 ENV AWS_ACCESS_KEY_ID=""
 ENV AWS_SECRET_ACCESS_KEY=""
 ENV OPENAI_API_KEY=""
+ENV MXCP_CONFIG_PATH=""
 
 # Ensure directories have correct permissions
 RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs
