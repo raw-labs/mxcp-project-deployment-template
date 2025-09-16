@@ -17,10 +17,6 @@ models:
     provider: openai
     api_key: ${OPENAI_API_KEY}
     model: gpt-3.5-turbo
-  claude-3-5-sonnet-20241022:
-    provider: anthropic
-    api_key: ${ANTHROPIC_API_KEY}
-    model: claude-3-5-sonnet-20241022
 
 # Generic Secrets Configuration
 # Store any project-specific secrets here
