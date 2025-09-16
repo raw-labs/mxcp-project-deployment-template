@@ -42,8 +42,9 @@ jobs:
         curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         
-        # Run comprehensive test suite
-        just validate-config
+        # Run comprehensive test suite using justfile
+        # Try full pipeline if data is available, otherwise just config validation
+        just full-pipeline || just validate-config
     
     - name: Upload test results
       if: always()

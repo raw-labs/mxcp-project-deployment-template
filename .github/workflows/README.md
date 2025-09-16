@@ -44,9 +44,11 @@ env:
 
 ### Modern Task Runner
 All workflows use the `just` task runner for clean, maintainable task execution:
-- `just validate-config` - Configuration validation
-- `just prepare-build` - Data download and dbt processing
-- Integration testing against deployed service
+- `just validate-config` - Configuration validation (fallback)
+- `just ci-tests-with-data` - Comprehensive CI tests with data download
+- `just full-pipeline` - Complete development pipeline (test workflow)
+- `just test-integration` - Post-deployment integration tests
+- `just prepare-build` - Data download and dbt processing (Docker)
 
 ### Security
 - **Secrets**: Stored in GitHub repository secrets

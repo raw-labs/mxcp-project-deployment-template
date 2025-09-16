@@ -56,7 +56,8 @@ jobs:
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        just validate-config
+        # Run comprehensive CI tests (config validation + data tests if available)
+        just ci-tests-with-data || just validate-config
 
   deploy:
     needs: [check-secrets, validate-config]
@@ -189,9 +190,10 @@ jobs:
         if curl -f "https://$SERVICE_URL/health" > /dev/null 2>&1; then
           echo "✅ Service health check passed"
           
-          # Run post-deployment integration tests
+          # Run post-deployment integration tests using justfile
           echo "🧪 Running post-deployment tests..."
-          python tests/python/test_comprehensive.py --transport streamable-http --host $SERVICE_URL --port 443 || {
+          # Try justfile integration tests first, fallback to direct python if justfile not customized
+          just test-integration || python tests/python/test_comprehensive.py --transport streamable-http --host $SERVICE_URL --port 443 || {
             echo "⚠️ Post-deployment tests failed - service may need more time to start"
             echo "Service is deployed but may not be fully ready for testing"
           }

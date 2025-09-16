@@ -37,8 +37,9 @@ ENV AWS_SECRET_ACCESS_KEY=$MXCP_DATA_SECRET_ACCESS_KEY
 # Install just task runner for streamlined data preparation
 RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
-# Download and process UAE business license data using just
+# Prepare project data using justfile (supports different data strategies)
 RUN mkdir -p ./data ./logs
+# Use justfile for flexible data preparation - supports S3, API, or static data
 RUN just prepare-build
 
 # Clear AWS credentials after data preparation (security)
