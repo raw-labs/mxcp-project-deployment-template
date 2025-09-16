@@ -1,6 +1,53 @@
 # MXCP Project Deployment Template
 
-This repository provides standardized deployment infrastructure for MXCP projects, enabling consistent CI/CD and deployment patterns across all RAW Labs MXCP implementations.
+> 🚀 **Standardized deployment infrastructure for MXCP projects with proven CI/CD patterns**
+
+This template enables consistent deployment of MXCP servers across RAW Labs and external teams, with support for AWS App Runner and Kubernetes/Flux deployments.
+
+## 🚀 Quick Start
+
+```bash
+# For new projects
+cp -r mxcp-project-deployment-template/ my-new-project/
+cd my-new-project
+./setup-project.sh my-project-name
+
+# For existing projects
+cd existing-project
+cp -r /path/to/template/.github .
+cp -r /path/to/template/deployment .
+./setup-project.sh my-project-name
+```
+
+## Table of Contents
+
+- [Quick Start](#-quick-start)
+- [Architecture Overview](#architecture-overview)
+- [Purpose](#purpose)
+- [Template Components](#template-components)
+- [Prerequisites](#prerequisites)
+- [Usage](#usage)
+  - [For New MXCP Projects](#for-new-mxcp-projects)
+  - [For Existing MXCP Projects](#for-existing-mxcp-projects)
+- [Template Philosophy](#template-philosophy)
+- [Justfile Guide](#justfile-guide)
+  - [3-Tiered Testing Architecture](#3-tiered-testing-architecture)
+  - [Template Placeholders](#template-placeholders)
+  - [Available Tasks](#available-tasks)
+- [Examples](#examples)
+- [Integration Guide for DevOps Teams](#integration-guide-for-devops-teams)
+  - [For RAW Labs Teams](#for-raw-labs-teams)
+  - [For External Teams (Squirro)](#for-external-teams-squirro)
+  - [Network and Service Discovery](#network-and-service-discovery)
+  - [Environment Variables](#environment-variables)
+  - [Production Checklist](#production-checklist)
+- [Secret Management](#secret-management)
+- [Monitoring and Observability](#monitoring-and-observability)
+  - [Health Monitoring](#health-monitoring)
+  - [Audit Logs](#audit-logs)
+  - [Metrics and Dashboards](#metrics-and-dashboards)
+- [Backup and Recovery](#backup-and-recovery)
+- [Support](#support)
 
 ## Architecture Overview
 
@@ -119,48 +166,80 @@ The diagram above shows how the template's components work together:
 
 ## Purpose
 
-**Template Architecture Benefits:**
-- **Standardized CI/CD** - Same deployment logic across all MXCP projects
-- **Easy Squirro collaboration** - Clear separation between stable templates and customizable configuration
-- **Proven patterns** - Based on successful production deployments
-- **Minimal merge conflicts** - Template files rarely change
+### Why Use This Template?
+
+| Benefit | Description |
+|---------|-------------|
+| **🔧 Standardized CI/CD** | Same deployment logic across all MXCP projects |
+| **🤝 Multi-team Support** | Works for RAW Labs, Squirro, and other external teams |
+| **✅ Production Proven** | Powers UAE MXCP Server with 3M+ records |
+| **🔄 Easy Updates** | Minimal merge conflicts, clear separation of concerns |
+| **🏃 Fast Deployment** | From zero to deployed in under 10 minutes |
+| **🔒 Security First** | Built-in secrets management and audit logging |
 
 ## Template Components
 
-### Stable Components (.github/)
-**Never modified by project teams:**
-- `workflows/deploy.yml` - Generic CI/CD pipeline for AWS App Runner
-- `workflows/test.yml` - Standardized testing workflow
-- `scripts/deploy-app-runner.sh` - App Runner deployment logic
-- `workflows/release.yml` - Release management
+### 📁 Directory Structure
 
-### Customizable Components (deployment/)
-**Modified for each project:**
-- `config.env.template` - AWS account, ECR repository, service names
-- `mxcp-site-docker.yml.template` - MXCP configuration with project name
-- `profiles-docker.yml.template` - dbt profiles with project name
-- `mxcp-user-config.yml.template` - MXCP user config with LLM API keys and generic secrets
-- `Dockerfile` - Generic container build pattern
-- `start.sh` - Generic container startup script
-- `requirements.txt` - Base MXCP dependencies
+```
+mxcp-project-deployment-template/
+├── .github/                    # Stable CI/CD (rarely modified)
+│   ├── workflows/              
+│   │   ├── deploy.yml         # Main deployment pipeline
+│   │   ├── test.yml           # PR testing workflow
+│   │   └── release.yml        # Release management
+│   └── scripts/
+│       └── deploy-app-runner.sh # AWS deployment script
+├── deployment/                 # Customizable configs
+│   ├── config.env.template    # AWS settings
+│   ├── Dockerfile             # Container build
+│   ├── mxcp-site-docker.yml.template # MXCP config
+│   ├── mxcp-user-config.yml.template # Secrets config
+│   ├── profiles-docker.yml.template  # dbt profiles
+│   ├── requirements.txt       # Python dependencies
+│   └── start.sh              # Container startup
+├── .squirro/                  # External team integration
+│   ├── setup-for-squirro.sh.template
+│   └── merge-from-raw.sh     
+├── justfile.template          # Task runner config
+├── setup-project.sh           # One-click setup
+├── ENVIRONMENT.md.template    # Variable documentation
+└── README.md                  # This file
+```
 
 ## Prerequisites
 
-### AWS Setup
-1. **AWS Account** with App Runner service access
-2. **IAM Role**: `AppRunnerECRAccessRole` with ECR access permissions
-3. **Repository Secrets** in GitHub:
-   - `AWS_ACCESS_KEY_ID` - For deployment access
-   - `AWS_SECRET_ACCESS_KEY` - For deployment access
-   - `MXCP_DATA_ACCESS_KEY_ID` - For data download (if needed)
-   - `MXCP_DATA_SECRET_ACCESS_KEY` - For data download (if needed)
-   - `OPENAI_API_KEY` - For LLM functionality (optional)
-   - `ANTHROPIC_API_KEY` - For Claude models (optional)
+### ✅ Required
 
-### Required Tools
-- **Git** - For repository management
-- **Docker** - For local testing (optional)
-- **just** - Modern task runner (optional but recommended)
+| Component | Purpose | Setup Guide |
+|-----------|---------|-------------|
+| **AWS Account** | Deployment target | [AWS Free Tier](https://aws.amazon.com/free/) |
+| **GitHub Account** | CI/CD and version control | [GitHub Signup](https://github.com/join) |
+| **IAM Role** | `AppRunnerECRAccessRole` | See ENVIRONMENT.md |
+
+### 🔑 GitHub Secrets Required
+
+```bash
+# Deployment credentials
+gh secret set AWS_ACCESS_KEY_ID
+gh secret set AWS_SECRET_ACCESS_KEY
+
+# Data access (if using S3/external data)
+gh secret set MXCP_DATA_ACCESS_KEY_ID
+gh secret set MXCP_DATA_SECRET_ACCESS_KEY
+
+# LLM APIs (if using AI features)
+gh secret set OPENAI_API_KEY        # Optional
+gh secret set ANTHROPIC_API_KEY     # Optional
+```
+
+### 🛠️ Local Development Tools
+
+| Tool | Required | Installation |
+|------|----------|--------------|
+| Git | ✅ Yes | `apt install git` |
+| Docker | ⚠️ Optional | [Docker Desktop](https://docker.com) |
+| just | ⚠️ Recommended | `curl -sSf https://just.systems/install.sh \| bash` |
 
 ## Usage
 
@@ -490,17 +569,16 @@ just ci-tests-with-data    # Standard CI tests with data
 
 ## Examples
 
-### Successful Implementation
-- **UAE Business Licenses**: https://github.com/raw-labs/uae-mxcp-server
-- **Live Service**: https://sqt3yghjpw.eu-west-1.awsapprunner.com
-- **Records**: 3,186,320 UAE business licenses
-- **Configuration**: 4 vCPU, 8GB memory
+### 🏆 Success Story: UAE Business Licenses
 
-### Template Benefits Proven
-- **Zero merge conflicts** during RAW-Squirro collaboration
-- **Consistent deployment** across all MXCP projects  
-- **Easy customization** - Only edit deployment/config.env
-- **Automatic CI/CD** - Works out of the box
+| Metric | Value |
+|--------|-------|
+| **Repository** | [uae-mxcp-server](https://github.com/raw-labs/uae-mxcp-server) |
+| **Live Service** | [App Runner Deployment](https://sqt3yghjpw.eu-west-1.awsapprunner.com) |
+| **Data Scale** | 3,186,320 business licenses |
+| **Performance** | 4 vCPU, 8GB RAM |
+| **Deployment Time** | < 10 minutes |
+| **Merge Conflicts** | Zero during RAW-Squirro collaboration |
 
 ## Integration Guide for DevOps Teams
 
