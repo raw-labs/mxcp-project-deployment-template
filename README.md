@@ -2,6 +2,121 @@
 
 This repository provides standardized deployment infrastructure for MXCP projects, enabling consistent CI/CD and deployment patterns across all RAW Labs MXCP implementations.
 
+## Architecture Overview
+
+```mermaid
+graph TB
+    %% GitHub Workflows
+    subgraph "🚀 GitHub Workflows (.github/)"
+        Deploy[".github/workflows/deploy.yml<br/>📋 Main CI/CD Pipeline"]
+        Test[".github/workflows/test.yml<br/>🧪 PR Testing"]
+        Release[".github/workflows/release.yml<br/>🏷️ Release Management"]
+    end
+
+    %% Justfile Tasks
+    subgraph "⚡ Justfile Tasks (justfile)"
+        ValidateConfig["just validate-config<br/>📝 YAML validation"]
+        CiTests["just ci-tests-with-data<br/>🔍 CI tests + data"]
+        FullPipeline["just full-pipeline<br/>🏗️ Complete dev pipeline"]
+        TestIntegration["just test-integration<br/>🔧 Integration tests"]
+        PrepareBuild["just prepare-build<br/>📦 Data preparation"]
+        TestData["just test-data<br/>🧪 Level 1: dbt tests"]
+        TestEvals["just test-evals<br/>🤖 Level 3: LLM evals"]
+    end
+
+    %% Deployment Files
+    subgraph "🐳 Deployment (deployment/)"
+        Dockerfile["Dockerfile<br/>🐳 Container build"]
+        ConfigEnv["config.env.template<br/>⚙️ AWS configuration"]
+        MxcpSite["mxcp-site-docker.yml.template<br/>🔧 MXCP config"]
+        UserConfig["mxcp-user-config.yml.template<br/>🔐 Secrets & LLM keys"]
+        StartSh["start.sh<br/>🚀 Container startup"]
+    end
+
+    %% Project Files
+    subgraph "📁 Project Structure"
+        Scripts["scripts/<br/>📜 Data download logic"]
+        Tools["tools/<br/>🛠️ MXCP endpoints"]
+        Models["models/<br/>📊 dbt transformations"]
+    end
+
+    %% Workflow Relationships
+    Deploy -->|"1. Validation"| CiTests
+    Deploy -->|"Fallback"| ValidateConfig
+    Deploy -->|"2. Post-deployment"| TestIntegration
+    
+    Test -->|"PR Testing"| FullPipeline
+    Test -->|"Fallback"| ValidateConfig
+
+    %% Justfile Task Dependencies
+    CiTests --> ValidateConfig
+    CiTests --> PrepareBuild
+    CiTests --> TestData
+    
+    FullPipeline --> PrepareBuild
+    FullPipeline --> TestData
+    FullPipeline --> TestIntegration
+    
+    TestIntegration -->|"Uses"| Tools
+    TestData -->|"Tests"| Models
+
+    %% Docker Build Process
+    Dockerfile -->|"Installs just"| PrepareBuild
+    PrepareBuild -->|"Downloads data"| Scripts
+    PrepareBuild -->|"Runs dbt"| Models
+
+    %% Configuration Flow
+    ConfigEnv -->|"AWS settings"| Deploy
+    MxcpSite -->|"MXCP config"| Dockerfile
+    UserConfig -->|"Secrets"| Dockerfile
+
+    %% 3-Tiered Testing
+    subgraph "🎯 3-Tiered Testing"
+        Level1["Level 1: Data Quality<br/>🧪 dbt schema tests<br/>💰 Free"]
+        Level2["Level 2: Integration<br/>🔧 MXCP tools tests<br/>💰 Free"]
+        Level3["Level 3: LLM Evaluation<br/>🤖 AI behavior tests<br/>💰 Costs Apply"]
+    end
+
+    TestData -.->|"Implements"| Level1
+    TestIntegration -.->|"Implements"| Level2
+    TestEvals -.->|"Implements"| Level3
+
+    %% Styling
+    classDef workflow fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef justfile fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef deployment fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef project fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef testing fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class Deploy,Test,Release workflow
+    class ValidateConfig,CiTests,FullPipeline,TestIntegration,PrepareBuild,TestData,TestEvals justfile
+    class Dockerfile,ConfigEnv,MxcpSite,UserConfig,StartSh deployment
+    class Scripts,Tools,Models project
+    class Level1,Level2,Level3 testing
+```
+
+### Understanding the Architecture
+
+The diagram above shows how the template's components work together:
+
+**🔄 Workflow Execution Flow:**
+1. **GitHub Workflows** trigger **Justfile tasks** for consistent execution
+2. **Justfile tasks** orchestrate the **3-tiered testing** approach
+3. **Deployment files** configure the containerized environment
+4. **Project files** contain your specific MXCP implementation
+
+**🎯 Key Integration Points:**
+- **Workflows → Justfile**: All CI/CD uses justfile tasks (no manual commands)
+- **Justfile → Project**: Tasks operate on your scripts, models, and tools
+- **Docker → Justfile**: Container build uses `just prepare-build` for data prep
+- **Config → All**: Template files provide consistent configuration patterns
+
+**💡 Benefits:**
+- **Consistency**: Same tasks run locally and in CI/CD
+- **Flexibility**: Graceful fallbacks for different project types
+- **Maintainability**: Centralized task definitions in justfile
+- **Testability**: 3-tiered approach from config validation to LLM evaluation
+
 ## Purpose
 
 **Template Architecture Benefits:**
