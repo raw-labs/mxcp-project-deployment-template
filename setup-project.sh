@@ -66,16 +66,37 @@ fi
 
 # Parse arguments
 FORCE=false
+PROJECT_NAME=""
+AWS_REGION="eu-west-1"  # Default region
+PROJECT_TYPE="data"     # Default project type: data, remote_data, or api
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --force)
             FORCE=true
             shift
             ;;
+        --name)
+            PROJECT_NAME="$2"
+            shift 2
+            ;;
+        --region)
+            AWS_REGION="$2"
+            shift 2
+            ;;
+        --type)
+            PROJECT_TYPE="$2"
+            shift 2
+            ;;
+        -h|--help)
+            show_usage=true
+            shift
+            ;;
         *)
+            # Support legacy positional arguments for backward compatibility
             if [ -z "$PROJECT_NAME" ]; then
                 PROJECT_NAME="$1"
-            elif [ -z "$AWS_REGION" ]; then
+            elif [ "$AWS_REGION" == "eu-west-1" ]; then
                 AWS_REGION="$1"
             fi
             shift
@@ -83,19 +104,27 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Show usage if no project name
-if [ -z "$PROJECT_NAME" ]; then
+# Show usage if no project name or help requested
+if [ -z "$PROJECT_NAME" ] || [ "$show_usage" == "true" ]; then
     echo -e "${BLUE}🚀 MXCP Project Template Setup${NC}"
     echo ""
-    echo "Usage: $0 [--force] PROJECT_NAME [AWS_REGION]"
+    echo "Usage: $0 --name <project-name> [options]"
     echo ""
     echo "Options:"
-    echo "  --force    Overwrite existing files without prompting"
+    echo "  --name <name>        Project name (required)"
+    echo "  --region <region>    AWS region (default: eu-west-1)"
+    echo "  --type <type>        Project type: data, remote_data, or api (default: data)"
+    echo "  --force              Overwrite existing files without prompting"
+    echo "  -h, --help           Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 finance-demo"
-    echo "  $0 uae-licenses us-west-2"
-    echo "  $0 --force my-project eu-central-1"
+    echo "  $0 --name uae-licenses"
+    echo "  $0 --name finance-demo --region us-west-2 --type remote_data"
+    echo "  $0 --name vertec-poc --type api"
+    echo ""
+    echo "Legacy format (still supported):"
+    echo "  $0 uae-licenses"
+    echo "  $0 finance-demo us-west-2"
     echo ""
     exit 1
 fi
@@ -119,8 +148,16 @@ if ! [[ "$AWS_REGION" =~ ^[a-z]{2}-[a-z]+-[0-9]+$ ]]; then
     fi
 fi
 
+# Validate project type
+if [[ ! "$PROJECT_TYPE" =~ ^(data|remote_data|api)$ ]]; then
+    print_error "Invalid project type: $PROJECT_TYPE"
+    print_error "Must be one of: data, remote_data, api"
+    exit 1
+fi
+
 print_step "Setting up MXCP project: $PROJECT_NAME"
 echo "AWS Region: $AWS_REGION"
+echo "Project Type: $PROJECT_TYPE"
 echo ""
 
 # Function to safely copy file with overwrite check
@@ -157,17 +194,32 @@ print_step "Step 3: Setting up task runner..."
 if safe_copy "justfile.template" "justfile" "task runner"; then
     sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" justfile
     
-    # Replace generic placeholders with UAE-specific commands (default example)
-    # Projects can customize these commands for their specific data sources
-    sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
-    sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
-    sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
-    # Replace eval commands placeholder with multiple eval calls
-    sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals licenses_basic|g" justfile
-    sed -i "/mxcp evals licenses_basic/a\\    mxcp evals search_functionality\\n    mxcp evals aggregation_analysis\\n    mxcp evals geographic_analysis\\n    mxcp evals timeseries_analysis\\n    mxcp evals edge_cases" justfile
+    # Replace placeholders based on project type
+    case "$PROJECT_TYPE" in
+        data)
+            # Local data files (e.g., CSV in data/ directory)
+            sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|@echo '📁 Using local data files from data/ directory'|g" justfile
+            sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+            sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+            ;;
+        remote_data)
+            # Remote data download (e.g., from S3)
+            sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
+            sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+            sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+            ;;
+        api)
+            # API-based project (no data download or dbt)
+            sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|@echo '🔌 API-based project - no data download needed'|g" justfile
+            sed -i "s|{{DBT_RUN_COMMAND}}|@echo '🔌 API-based project - no dbt models'|g" justfile
+            sed -i "s|{{DBT_TEST_COMMAND}}|@echo '🔌 API-based project - no dbt tests'|g" justfile
+            ;;
+    esac
     
-    print_success "Created justfile with project-specific commands"
-    print_warning "Note: Using UAE project commands as defaults. Customize for your data sources if needed."
+    # Simple eval command that runs all evals
+    sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals|g" justfile
+    
+    print_success "Created justfile with $PROJECT_TYPE project defaults"
 fi
 
 # Check if just is installed
@@ -343,3 +395,4 @@ echo "- ENVIRONMENT.md"
 echo ""
 echo -e "${BLUE}Project: ${GREEN}$PROJECT_NAME${NC}"
 echo -e "${BLUE}Region:  ${GREEN}$AWS_REGION${NC}"
+echo -e "${BLUE}Type:    ${GREEN}$PROJECT_TYPE${NC}"

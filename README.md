@@ -263,9 +263,14 @@ cp -r /path/to/mxcp-project-deployment-template your-new-project/
 cd your-new-project
 
 # Run automated setup (steps 2-4)
-./setup-project.sh your-project-name [aws-region]
+./setup-project.sh --name your-project-name [options]
 
-# Example:
+# Examples:
+./setup-project.sh --name finance-demo
+./setup-project.sh --name uae-licenses --region us-west-2 --type remote_data
+./setup-project.sh --name vertec-poc --type api
+
+# Legacy format (still supported):
 ./setup-project.sh finance-demo
 ./setup-project.sh uae-licenses us-west-2
 
@@ -274,6 +279,11 @@ cd your-new-project
 
 # ⚠️ Important: The script also handles .gitignore to ensure deployment files
 # are tracked in git (required for CI/CD to work)
+
+# Project Types:
+# - data: Local data files in data/ directory (default)
+# - remote_data: Data downloaded from external sources (S3, etc.)
+# - api: API-based project with no static data or dbt models
 ```
 
 #### MXCP Configuration
@@ -566,21 +576,18 @@ dbt test
 #### **{{MXCP_EVALS_COMMANDS}}**
 Replace with your MXCP evaluation commands.
 
-⚠️ **Important**: Prefix each command with `-` to make failures non-blocking:
+⚠️ **Important**: The command is prefixed with `-` to make failures non-blocking.
 
-**Example (multiple evals):**
+**Default (runs all evals):**
+```bash
+-mxcp evals
+```
+
+**Legacy format (specific eval suites):**
 ```bash
 -mxcp evals basic_test
 -mxcp evals search_functionality
--mxcp evals aggregation_analysis
--mxcp evals geographic_analysis
--mxcp evals timeseries_analysis
 -mxcp evals edge_cases
-```
-
-**Example (single eval):**
-```bash
--mxcp evals my_project_basic
 ```
 
 ### UAE MXCP Server Example
@@ -593,7 +600,7 @@ PROJECT_NAME="uae-licenses"
 DATA_DOWNLOAD_COMMAND="python3 scripts/download_real_data.py --output data/licenses.csv"
 DBT_RUN_COMMAND='dbt run --vars '"'"'{"licenses_file": "data/licenses.csv"}'"'"''
 DBT_TEST_COMMAND='dbt test --vars '"'"'{"licenses_file": "data/licenses.csv"}'"'"''
-MXCP_EVALS_COMMANDS="-mxcp evals basic_test\n    -mxcp evals search_functionality\n    -mxcp evals aggregation_analysis\n    -mxcp evals geographic_analysis\n    -mxcp evals timeseries_analysis\n    -mxcp evals edge_cases"
+MXCP_EVALS_COMMANDS="-mxcp evals"  # Runs all eval suites
 ```
 
 ### Available Tasks
