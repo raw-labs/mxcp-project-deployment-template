@@ -20,7 +20,7 @@ models:
 
 # Project configuration with custom secrets example
 projects:
-  {{PROJECT_NAME}}-mxcp:
+  "{{PROJECT_NAME}}-mxcp":
     profiles:
       prod:
         secrets:

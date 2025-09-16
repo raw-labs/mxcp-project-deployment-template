@@ -26,7 +26,7 @@ COPY . .
 # Create container-specific MXCP configuration
 COPY deployment/mxcp-site-docker.yml ./mxcp-site.yml
 COPY deployment/profiles-docker.yml ./profiles.yml
-COPY deployment/mxcp-user-config.yml.template /home/mxcp/.mxcp/config.yml
+COPY deployment/mxcp-user-config.yml /home/mxcp/.mxcp/config.yml
 
 # Install just task runner (needs root for /usr/local/bin)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin

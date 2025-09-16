@@ -228,16 +228,110 @@ if safe_copy "ENVIRONMENT.md.template" "ENVIRONMENT.md" "environment documentati
     print_success "Created ENVIRONMENT.md with project-specific variables"
 fi
 
+# Step 6: Handle .gitignore
+print_step "Step 6: Updating .gitignore..."
+
+# Check if .gitignore exists
+if [ -f ".gitignore" ]; then
+    print_info "Found existing .gitignore - updating to ensure deployment files are tracked..."
+    
+    # Check if these files are currently ignored and remove those entries
+    for file in "deployment/config.env" "deployment/mxcp-site-docker.yml" "deployment/profiles-docker.yml" "deployment/mxcp-user-config.yml" "justfile"; do
+        # Remove exact matches
+        sed -i "/^$(echo $file | sed 's/\//\\\//g')$/d" .gitignore
+        # Remove with leading slash
+        sed -i "/^\/$(echo $file | sed 's/\//\\\//g')$/d" .gitignore
+    done
+    
+    # Add a note about deployment files
+    if ! grep -q "# MXCP Deployment files" .gitignore; then
+        echo "" >> .gitignore
+        echo "# MXCP Deployment files - NOT ignored (required for CI/CD)" >> .gitignore
+        echo "# deployment/config.env" >> .gitignore
+        echo "# deployment/mxcp-site-docker.yml" >> .gitignore
+        echo "# deployment/profiles-docker.yml" >> .gitignore
+        echo "# deployment/mxcp-user-config.yml" >> .gitignore
+        echo "# justfile" >> .gitignore
+    fi
+    
+    print_success "Updated .gitignore - deployment files will be tracked in git"
+else
+    print_warning "No .gitignore found"
+    print_info "Creating basic .gitignore with deployment files NOT ignored..."
+    
+    cat > .gitignore << 'EOF'
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# MXCP Deployment files - NOT ignored (required for CI/CD)
+# deployment/config.env
+# deployment/mxcp-site-docker.yml
+# deployment/profiles-docker.yml
+# deployment/mxcp-user-config.yml
+# justfile
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Data files
+data/
+*.csv
+*.json
+*.parquet
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# AWS
+.aws/
+EOF
+    
+    print_success "Created .gitignore with basic patterns"
+fi
+
 
 # Summary
 echo ""
 print_success "🎉 Project setup complete!"
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
-echo "1. Run: mxcp init --bootstrap (Step 5 from README)"
-echo "2. Choose your data strategy (Step 6 from README)"
-echo "3. Set GitHub repository secrets for deployment"
-echo "4. Push to trigger deployment: git push origin main"
+echo "1. Run: mxcp init --bootstrap"
+echo "2. Choose your data strategy (see README)"
+echo "3. Review and commit the generated files to git"
+echo "4. Set GitHub repository secrets for deployment"
+echo "5. Push to trigger deployment: git push origin main"
 echo ""
 echo -e "${BLUE}Files created:${NC}"
 echo "- deployment/config.env"
