@@ -164,6 +164,10 @@ The diagram above shows how the template's components work together:
 
 ## Usage
 
+### For Existing MXCP Projects
+
+See [MIGRATION-GUIDE.md](MIGRATION-GUIDE.md) for detailed instructions on applying this template to existing projects.
+
 ### For New MXCP Projects
 
 #### Quick Setup (Automated)
