@@ -26,11 +26,16 @@ COPY . .
 # Create container-specific MXCP configuration
 COPY deployment/mxcp-site-docker.yml ./mxcp-site.yml
 COPY deployment/profiles-docker.yml ./profiles.yml
-
-# Setup MXCP user configuration with secrets
-RUN mkdir -p /home/mxcp/.mxcp
 COPY deployment/mxcp-user-config.yml.template /home/mxcp/.mxcp/config.yml
-RUN chown -R mxcp:mxcp /home/mxcp/.mxcp
+
+# Install just task runner (needs root for /usr/local/bin)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+# Change ownership of everything to mxcp user
+RUN chown -R mxcp:mxcp /app /home/mxcp
+
+# Switch to non-root user for security
+USER mxcp
 
 # PROJECT-SPECIFIC: UAE Business License Data Preparation
 # Squirro can modify this section for their data sources
@@ -43,9 +48,6 @@ ENV AWS_SECRET_ACCESS_KEY=$MXCP_DATA_SECRET_ACCESS_KEY
 ARG OPENAI_API_KEY
 ENV OPENAI_API_KEY=$OPENAI_API_KEY
 
-# Install just task runner for streamlined data preparation
-RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
-
 # Prepare project data using justfile (supports different data strategies)
 RUN mkdir -p ./data ./logs
 # Use justfile for flexible data preparation - supports S3, API, or static data
@@ -53,9 +55,6 @@ RUN just prepare-build
 
 # Create symlink for mxcp that tests expect
 RUN mkdir -p .env/bin && ln -s /usr/local/bin/mxcp .env/bin/mxcp
-
-# Set MXCP config path for tests (running as root during build)
-ENV MXCP_CONFIG_PATH=/home/mxcp/.mxcp/config.yml
 
 # Run all 3 levels of testing during build
 # This ensures only tested code gets deployed
@@ -65,10 +64,9 @@ RUN just test-all || (echo "❌ Tests failed during Docker build" && exit 1)
 ENV AWS_ACCESS_KEY_ID=""
 ENV AWS_SECRET_ACCESS_KEY=""
 ENV OPENAI_API_KEY=""
-ENV MXCP_CONFIG_PATH=""
 
 # Ensure directories have correct permissions
-RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs
+RUN chmod -R 755 ./data ./logs
 
 # Set environment variables
 ENV PYTHONPATH=/app
@@ -79,9 +77,6 @@ ENV MXCP_TRANSPORT=streamable-http
 ENV HOME=/home/mxcp
 ENV DBT_PROFILES_DIR=/app
 ENV PYTHONLOGLEVEL=INFO
-
-# Switch to non-root user
-USER mxcp
 
 # Expose port
 EXPOSE $PORT
