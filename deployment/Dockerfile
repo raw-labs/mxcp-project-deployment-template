@@ -39,6 +39,10 @@ ARG MXCP_DATA_SECRET_ACCESS_KEY
 ENV AWS_ACCESS_KEY_ID=$MXCP_DATA_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$MXCP_DATA_SECRET_ACCESS_KEY
 
+# API keys for testing (needed for test-evals)
+ARG OPENAI_API_KEY
+ENV OPENAI_API_KEY=$OPENAI_API_KEY
+
 # Install just task runner for streamlined data preparation
 RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
@@ -47,9 +51,14 @@ RUN mkdir -p ./data ./logs
 # Use justfile for flexible data preparation - supports S3, API, or static data
 RUN just prepare-build
 
-# Clear AWS credentials after data preparation (security)
+# Run all 3 levels of testing during build
+# This ensures only tested code gets deployed
+RUN just test-all || (echo "❌ Tests failed during Docker build" && exit 1)
+
+# Clear sensitive credentials after tests (security)
 ENV AWS_ACCESS_KEY_ID=""
 ENV AWS_SECRET_ACCESS_KEY=""
+ENV OPENAI_API_KEY=""
 
 # Ensure directories have correct permissions
 RUN chmod -R 755 ./data ./logs && chown -R mxcp:mxcp ./data ./logs
