@@ -271,7 +271,50 @@ cd your-new-project
 
 # ℹ️ dbt Integration: The script automatically updates dbt_project.yml 
 # to use profile '{{PROJECT_NAME}}-mxcp' matching the generated profiles.yml
+
+# ⚠️ Important: The script also handles .gitignore to ensure deployment files
+# are tracked in git (required for CI/CD to work)
 ```
+
+#### MXCP Configuration
+
+The `deployment/mxcp-user-config.yml` file configures LLM models and secrets:
+
+```yaml
+# LLM Models Configuration (REQUIRED FORMAT)
+models:
+  default: gpt-4o        # Default model to use
+  models:                # Nested models object
+    gpt-4o:
+      type: openai       # Use 'type' not 'provider'
+      api_key: ${OPENAI_API_KEY}
+    gpt-3.5-turbo:
+      type: openai
+      api_key: ${OPENAI_API_KEY}
+    # Add custom model mappings if needed:
+    gpt-4.1:
+      type: openai
+      api_key: ${OPENAI_API_KEY}
+      model: gpt-4o      # Map to actual model
+
+# Project secrets configuration
+projects:
+  "{{PROJECT_NAME}}-mxcp":
+    profiles:
+      prod:
+        secrets:
+          - name: "example-secret"
+            type: "custom"
+            parameters:
+              param_a: "value_a"
+              param_b: "value_b"
+```
+
+⚠️ **Common Configuration Errors:**
+- Using flat model structure instead of `models.default` + `models.models`
+- Using `provider:` instead of `type:` for model configuration
+- Adding unsupported properties like `secrets: {}` at top level
+- Forgetting quotes around project names with special characters
 
 #### Manual Setup (Step by Step)
 
@@ -366,7 +409,31 @@ mkdir -p scripts/
 git push origin main
 ```
 
-### For Existing MXCP Projects
+### Critical: .gitignore Configuration
+
+⚠️ **IMPORTANT**: The deployment files MUST be tracked in git for CI/CD to work!
+
+When using this template in your project, ensure these files are **NOT** in your `.gitignore`:
+- `deployment/config.env`
+- `deployment/mxcp-user-config.yml`
+- `deployment/mxcp-site-docker.yml`
+- `deployment/profiles-docker.yml`
+- `justfile`
+
+The `setup-project.sh` script automatically handles this, but if you're setting up manually:
+
+```bash
+# Remove these entries from .gitignore if present
+sed -i '/^deployment\/config\.env$/d' .gitignore
+sed -i '/^deployment\/mxcp-user-config\.yml$/d' .gitignore
+sed -i '/^deployment\/mxcp-site-docker\.yml$/d' .gitignore
+sed -i '/^deployment\/profiles-docker\.yml$/d' .gitignore
+sed -i '/^justfile$/d' .gitignore
+```
+
+**Why this matters**: During CI/CD, GitHub Actions clones your repository and builds the Docker image. If these files are gitignored, they won't exist in the clone, causing the Docker build to fail with "file not found" errors.
+
+## For Existing MXCP Projects
 
 #### Scenario 1: Project Without CI/CD
 
@@ -595,6 +662,52 @@ just ci-tests-with-data    # Standard CI tests with data
 | **Performance** | 4 vCPU, 8GB RAM |
 | **Deployment Time** | < 10 minutes |
 | **Merge Conflicts** | Zero during RAW-Squirro collaboration |
+
+## Troubleshooting Common Issues
+
+### Docker Build Failures
+
+#### "File not found" errors
+```
+COPY failed: file not found in build context
+```
+**Cause**: Deployment files are in `.gitignore`
+**Fix**: Ensure deployment files are tracked in git (see [Critical: .gitignore Configuration](#critical-gitignore-configuration))
+
+#### "Invalid user config" errors
+```
+Error: Invalid user config: Additional properties are not allowed
+```
+**Cause**: Incorrect MXCP configuration format
+**Fix**: Check `deployment/mxcp-user-config.yml` follows the [correct format](#mxcp-configuration)
+
+#### "Model not configured" errors
+```
+Error: Model 'gpt-4.1' not configured in user config
+```
+**Cause**: Eval tests reference a model not in config
+**Fix**: Add the model to `mxcp-user-config.yml` or map it to an existing model
+
+### CI/CD Issues
+
+#### Eval tests causing build failures
+**Cause**: Eval test failures blocking deployment
+**Fix**: Ensure all `mxcp evals` commands in justfile have `-` prefix:
+```make
+test-evals:
+    -mxcp evals test1  # Note the - prefix
+    -mxcp evals test2  # Makes failures non-blocking
+```
+
+#### Missing GitHub Variables
+**Cause**: GitHub Variables not set for the repository
+**Fix**: Set all required variables:
+```bash
+gh variable set AWS_ACCOUNT_ID --body "684130658470"
+gh variable set AWS_REGION --body "eu-west-1"
+gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
+gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
+```
 
 ## Integration Guide for DevOps Teams
 
