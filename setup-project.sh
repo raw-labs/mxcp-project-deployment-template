@@ -4,6 +4,36 @@ set -e
 # MXCP Project Template Setup Script
 # Automates the customization steps from README.md (steps 2, 3, 4)
 
+# =============================================================================
+# TEMPLATE PLACEHOLDERS REFERENCE
+# =============================================================================
+# This script replaces the following placeholders in template files:
+#
+# {{PROJECT_NAME}}           - Your project name (e.g., "uae-licenses")
+#                             Used in: config.env.template, justfile.template,
+#                                     mxcp-site-docker.yml.template, 
+#                                     profiles-docker.yml.template
+#
+# {{AWS_REGION}}            - AWS region (e.g., "eu-west-1")
+#                             Used in: profiles-docker.yml.template
+#
+# {{DATA_DOWNLOAD_COMMAND}} - Command to download/prepare data
+#                             Used in: justfile.template
+#                             Default: python3 scripts/download_real_data.py --output data/licenses.csv
+#
+# {{DBT_RUN_COMMAND}}       - dbt run command with project-specific vars
+#                             Used in: justfile.template
+#                             Default: dbt run --vars '{"licenses_file": "data/licenses.csv"}'
+#
+# {{DBT_TEST_COMMAND}}      - dbt test command with project-specific vars
+#                             Used in: justfile.template
+#                             Default: dbt test --vars '{"licenses_file": "data/licenses.csv"}'
+#
+# {{MXCP_EVALS_COMMANDS}}   - MXCP evaluation test commands
+#                             Used in: justfile.template
+#                             Default: Multiple mxcp evals commands
+# =============================================================================
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -123,20 +153,21 @@ fi
 # Step 3: Setup Task Runner
 print_step "Step 3: Setting up task runner..."
 
-cp justfile.template justfile
-sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" justfile
-
-# Replace generic placeholders with UAE-specific commands (default example)
-# Projects can customize these commands for their specific data sources
-sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
-sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
-sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
-# Replace eval commands placeholder with multiple eval calls
-sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals basic_test|g" justfile
-sed -i "/mxcp evals basic_test/a\\    mxcp evals search_functionality\\n    mxcp evals aggregation_analysis\\n    mxcp evals geographic_analysis\\n    mxcp evals timeseries_analysis\\n    mxcp evals edge_cases" justfile
-
-print_success "Created justfile with project-specific commands"
-print_warning "Note: Using UAE project commands as defaults. Customize for your data sources if needed."
+if safe_copy "justfile.template" "justfile" "task runner"; then
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" justfile
+    
+    # Replace generic placeholders with UAE-specific commands (default example)
+    # Projects can customize these commands for their specific data sources
+    sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
+    sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+    sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
+    # Replace eval commands placeholder with multiple eval calls
+    sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals basic_test|g" justfile
+    sed -i "/mxcp evals basic_test/a\\    mxcp evals search_functionality\\n    mxcp evals aggregation_analysis\\n    mxcp evals geographic_analysis\\n    mxcp evals timeseries_analysis\\n    mxcp evals edge_cases" justfile
+    
+    print_success "Created justfile with project-specific commands"
+    print_warning "Note: Using UAE project commands as defaults. Customize for your data sources if needed."
+fi
 
 # Check if just is installed
 if ! command -v just &> /dev/null; then
@@ -156,21 +187,22 @@ fi
 print_step "Step 4: Customizing Docker configuration..."
 
 # Update MXCP configuration
-cp deployment/mxcp-site-docker.yml.template deployment/mxcp-site-docker.yml
-sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" deployment/mxcp-site-docker.yml
-
-print_success "Created deployment/mxcp-site-docker.yml"
+if safe_copy "deployment/mxcp-site-docker.yml.template" "deployment/mxcp-site-docker.yml" "MXCP site configuration"; then
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" deployment/mxcp-site-docker.yml
+    print_success "Created deployment/mxcp-site-docker.yml"
+fi
 
 # Update dbt profiles
-cp deployment/profiles-docker.yml.template deployment/profiles-docker.yml
-sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{AWS_REGION}}/$AWS_REGION/g" deployment/profiles-docker.yml
-
-print_success "Created deployment/profiles-docker.yml"
+if safe_copy "deployment/profiles-docker.yml.template" "deployment/profiles-docker.yml" "dbt profiles"; then
+    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{AWS_REGION}}/$AWS_REGION/g" deployment/profiles-docker.yml
+    print_success "Created deployment/profiles-docker.yml"
+fi
 
 # Copy MXCP user configuration
-cp deployment/mxcp-user-config.yml.template deployment/mxcp-user-config.yml
-
-print_success "Created deployment/mxcp-user-config.yml"
+if safe_copy "deployment/mxcp-user-config.yml.template" "deployment/mxcp-user-config.yml" "MXCP user configuration"; then
+    print_success "Created deployment/mxcp-user-config.yml"
+    print_warning "Remember to set environment variables for API keys in this file"
+fi
 
 # Summary
 echo ""
