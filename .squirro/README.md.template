@@ -17,6 +17,11 @@ cd uae-mxcp-server
 
 ### 2. Run Setup Script
 ```bash
+# First copy and customize the template
+cp .squirro/setup-for-squirro.sh.template .squirro/setup-for-squirro.sh
+# Edit to replace {{PROJECT_NAME}} with your project name
+vim .squirro/setup-for-squirro.sh
+# Then run it
 ./.squirro/setup-for-squirro.sh
 ```
 

@@ -11,10 +11,10 @@ This directory contains Squirro-specific tools and configurations for deploying 
 
 ## Files in this Directory
 
-### setup-for-squirro.sh
-- **Purpose**: One-time setup when Squirro first forks this repository
+### setup-for-squirro.sh.template
+- **Purpose**: Template for one-time setup when Squirro first forks this repository
 - **What it does**: Configures the repository for Squirro's environment
-- **When to run**: Once, after forking from RAW Labs
+- **When to run**: Once, after forking from RAW Labs (copy and customize first)
 
 ### merge-from-raw.sh  
 - **Purpose**: Get updates from RAW Labs while preserving Squirro configurations
