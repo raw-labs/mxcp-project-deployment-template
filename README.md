@@ -450,9 +450,96 @@ just ci-tests-with-data    # Standard CI tests with data
 - **Easy customization** - Only edit deployment/config.env
 - **Automatic CI/CD** - Works out of the box
 
+## Integration Guide for DevOps Teams
+
+### Overview
+
+This template enables standardized deployment of MXCP servers with proven patterns for both RAW Labs and external teams (like Squirro). The architecture supports:
+
+- **Standardized CI/CD** with AWS App Runner or external systems
+- **Flexible data strategies** (static, downloaded, or API-based)
+- **Health check architecture** proven with 3M+ record deployments
+- **Clean separation** between stable infrastructure and customizable components
+
+### For RAW Labs Teams
+
+1. **Create new MXCP project from template:**
+```bash
+cp -r mxcp-project-deployment-template/ new-project/
+cd new-project
+./setup-project.sh project-name
+```
+
+2. **Implement project logic:**
+- Add tools in `tools/`
+- Create data scripts in `scripts/`
+- Set up dbt models in `models/`
+
+3. **Deploy:**
+```bash
+git push origin main  # Triggers automatic deployment
+```
+
+### For External Teams (Squirro)
+
+1. **Fork the project repository** (not this template)
+2. **Run Squirro setup:**
+```bash
+./.squirro/setup-for-squirro.sh
+```
+3. **Customize for your infrastructure:**
+- Update `deployment/config.env`
+- Modify data sources if needed
+- Configure your deployment system
+
+4. **Merge updates from RAW:**
+```bash
+./.squirro/merge-from-raw.sh
+```
+
+### Network and Service Discovery
+
+**Port Configuration:**
+- External: Port 8000 (health checks + MCP proxy)
+- Internal: Port 8001 (MXCP server)
+
+**Health Architecture:**
+```
+Client → :8000/health → 200 OK (App Runner/K8s health)
+Client → :8000/mcp/* → Proxy → :8001 (MXCP server)
+```
+
+### Environment Variables
+
+Each project should document its specific requirements:
+- **AWS Configuration**: Set in `deployment/config.env`
+- **Secrets**: Use GitHub Secrets, Vault, or 1Password
+- **API Keys**: Configure in `deployment/mxcp-user-config.yml`
+
+### Production Checklist
+
+- [ ] Set up AWS credentials and GitHub secrets
+- [ ] Configure `deployment/config.env` with your values
+- [ ] Test locally with `just full-pipeline`
+- [ ] Deploy with `git push origin main`
+- [ ] Verify health endpoint responds
+- [ ] Check CloudWatch logs for audit trail
+
 ## Support
 
-For questions about using this template:
-- **Technical**: Pavlos Polydoras (pavlos@raw-labs.com)
-- **Integration**: RAW Labs Support
-- **Documentation**: https://github.com/raw-labs/mxcp-squirro-devops-integration-guide
+### What RAW Labs Provides
+- Template maintenance and updates
+- Bug fixes in MXCP framework
+- Technical guidance and best practices
+- Documentation and examples
+
+### What Teams Handle
+- Infrastructure and deployment
+- Secret management
+- Monitoring and alerting
+- Scaling and performance tuning
+
+### Contacts
+- **Technical Questions**: Pavlos Polydoras (pavlos@raw-labs.com)
+- **Template Issues**: Ben (ben@raw-labs.com)
+- **Documentation**: https://mxcp.dev/docs/
