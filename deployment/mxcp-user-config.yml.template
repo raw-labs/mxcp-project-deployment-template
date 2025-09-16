@@ -18,10 +18,9 @@ models:
     api_key: ${OPENAI_API_KEY}
     model: gpt-3.5-turbo
 
-# Generic Secrets Configuration
-# Store any project-specific secrets here
-# Examples:
-#   database_url: ${DATABASE_URL}
-#   api_key: ${EXTERNAL_API_KEY}
-#   webhook_secret: ${WEBHOOK_SECRET}
-secrets: {}
+# Project-Specific Configuration
+# Add any additional MXCP configuration here as needed
+# For example:
+#   - Additional model configurations
+#   - Transport settings
+#   - Tool-specific settings
