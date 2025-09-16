@@ -77,6 +77,7 @@ sed -i "s|{{MXCP_EVALS_COMMANDS}}|mxcp evals basic_test|g" justfile
 sed -i "/mxcp evals basic_test/a\\    mxcp evals search_functionality\\n    mxcp evals aggregation_analysis\\n    mxcp evals geographic_analysis\\n    mxcp evals timeseries_analysis\\n    mxcp evals edge_cases" justfile
 
 print_success "Created justfile with project-specific commands"
+print_warning "Note: Using UAE project commands as defaults. Customize for your data sources if needed."
 
 # Check if just is installed
 if ! command -v just &> /dev/null; then

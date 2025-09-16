@@ -94,7 +94,10 @@ vim deployment/config.env
 ```bash
 # Copy and customize the modern task runner
 cp justfile.template justfile
+
+# Customize placeholders for your project (see Justfile Guide below)
 sed -i "s/{{PROJECT_NAME}}/your-project/g" justfile
+# Add your specific data download and dbt commands...
 
 # Install just (if not already installed)
 curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
@@ -166,6 +169,157 @@ git push origin main
   - `{{DBT_RUN_COMMAND}}` - How to run dbt with your data variables
   - `{{DBT_TEST_COMMAND}}` - How to test dbt with your data variables
 - **Clear separation** - Teams know exactly what to customize vs what to keep
+
+## Justfile Guide
+
+The template includes a modern task runner (`justfile.template`) that provides a standardized way to run common MXCP operations. This replaces scattered shell scripts with clean, documented tasks.
+
+### 3-Tiered Testing Architecture
+
+The justfile implements a comprehensive testing strategy with three levels:
+
+| Level | Type | Purpose | Cost | Command |
+|-------|------|---------|------|---------|
+| **Level 1** | Data Quality | dbt schema tests, referential integrity | Free | `just test-data` |
+| **Level 2** | Integration | MXCP tools functionality, API endpoints | Free | `just test-integration` |
+| **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | `just test-evals` |
+
+### Template Placeholders
+
+When customizing `justfile.template`, replace these placeholders with your project-specific commands:
+
+#### **{{PROJECT_NAME}}** 
+Replace with your project name (e.g., "uae-licenses", "finance-demo"):
+```bash
+sed -i "s/{{PROJECT_NAME}}/your-project/g" justfile
+```
+
+#### **{{DATA_DOWNLOAD_COMMAND}}**
+Replace with your data download command:
+
+**Example (S3 download):**
+```bash
+python3 scripts/download_real_data.py --output data/licenses.csv
+```
+
+**Example (API fetch):**
+```bash
+python3 scripts/fetch_from_api.py --output data/records.csv
+```
+
+**Example (Static data):**
+```bash
+echo "Using static data - no download needed"
+```
+
+#### **{{DBT_RUN_COMMAND}}**
+Replace with your dbt run command:
+
+**Example (with variables):**
+```bash
+dbt run --vars '{"licenses_file": "data/licenses.csv"}'
+```
+
+**Example (simple):**
+```bash
+dbt run
+```
+
+#### **{{DBT_TEST_COMMAND}}**
+Replace with your dbt test command:
+
+**Example (with variables):**
+```bash
+dbt test --vars '{"licenses_file": "data/licenses.csv"}'
+```
+
+**Example (simple):**
+```bash
+dbt test
+```
+
+#### **{{MXCP_EVALS_COMMANDS}}**
+Replace with your MXCP evaluation commands:
+
+**Example (multiple evals):**
+```bash
+mxcp evals basic_test
+mxcp evals search_functionality
+mxcp evals aggregation_analysis
+mxcp evals geographic_analysis
+mxcp evals timeseries_analysis
+mxcp evals edge_cases
+```
+
+**Example (single eval):**
+```bash
+mxcp evals my_project_basic
+```
+
+### UAE MXCP Server Example
+
+Here's how the UAE project customized the template:
+
+```bash
+# UAE-specific customization
+PROJECT_NAME="uae-licenses"
+DATA_DOWNLOAD_COMMAND="python3 scripts/download_real_data.py --output data/licenses.csv"
+DBT_RUN_COMMAND='dbt run --vars '"'"'{"licenses_file": "data/licenses.csv"}'"'"''
+DBT_TEST_COMMAND='dbt test --vars '"'"'{"licenses_file": "data/licenses.csv"}'"'"''
+MXCP_EVALS_COMMANDS="mxcp evals basic_test\n    mxcp evals search_functionality\n    mxcp evals aggregation_analysis\n    mxcp evals geographic_analysis\n    mxcp evals timeseries_analysis\n    mxcp evals edge_cases"
+```
+
+### Available Tasks
+
+After customization, your justfile will provide these tasks:
+
+#### **Data Pipeline Tasks**
+- `just download` - Download/prepare your project data
+- `just build-models` - Run dbt transformations  
+- `just prepare-build` - Complete data preparation for Docker
+
+#### **Testing Tasks (3-Tier)**
+- `just test-config` - Validate YAML configurations (instant)
+- `just test-data` - Run dbt data quality tests (Level 1)
+- `just test-integration` - Test MXCP tools functionality (Level 2) 
+- `just test-evals` - Run LLM evaluation tests (Level 3, costs apply)
+- `just test-all` - Run all three testing levels
+
+#### **Development Workflows**
+- `just dev` - Standard development pipeline (Levels 1+2, free)
+- `just dev-full` - Full development pipeline (Levels 1+2+3, costs apply)
+- `just full-pipeline` - Complete ETL + testing pipeline
+- `just ci-tests-with-data` - CI-ready tests with data download
+
+#### **Utility Tasks**
+- `just validate-config` - Quick YAML validation (no data needed)
+- `just` or `just --list` - Show all available tasks
+
+### Usage Examples
+
+```bash
+# Quick development cycle (free)
+just dev                    # Download data + build + test Levels 1+2
+
+# Full validation before release (costs apply)  
+just dev-full              # Download data + build + test all 3 levels
+
+# Individual testing levels
+just test-data             # Level 1: dbt schema tests
+just test-integration      # Level 2: MXCP tools tests  
+just test-evals           # Level 3: LLM evaluation tests (requires OPENAI_API_KEY)
+
+# CI/CD pipeline
+just ci-tests-with-data    # Standard CI tests with data
+```
+
+### Cost Management
+
+**Level 3 (LLM Evaluation) costs apply:**
+- Requires `OPENAI_API_KEY` environment variable
+- Each eval run costs ~$0.10-$2.00 depending on complexity
+- Use `just test-evals` sparingly (before releases, not every commit)
+- Use `just dev` for daily development (excludes Level 3)
 
 ## Examples
 
