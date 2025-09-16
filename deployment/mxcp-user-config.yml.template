@@ -14,9 +14,6 @@ models:
     gpt-4o:
       type: openai
       api_key: ${OPENAI_API_KEY}
-    gpt-3.5-turbo:
-      type: openai
-      api_key: ${OPENAI_API_KEY}
     gpt-4.1:
       type: openai
       api_key: ${OPENAI_API_KEY}
