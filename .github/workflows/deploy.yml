@@ -172,8 +172,8 @@ jobs:
         echo "AWS_REGION=${{ env.AWS_REGION }}" >> .github/config.env
         echo "SERVICE_NAME=${{ env.APP_RUNNER_SERVICE }}" >> .github/config.env
         echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}" >> .github/config.env
-        echo "CPU_SIZE=${{ env.CPU_SIZE }}" >> .github/config.env
-        echo "MEMORY_SIZE=${{ env.MEMORY_SIZE }}" >> .github/config.env
+        echo "CPU_SIZE=\"${{ env.CPU_SIZE }}\"" >> .github/config.env
+        echo "MEMORY_SIZE=\"${{ env.MEMORY_SIZE }}\"" >> .github/config.env
     
     
     - name: Build and push Docker image
