@@ -10,7 +10,7 @@ download:
 # Build dbt models from downloaded data
 build-models:
     @echo "🏗️ Building dbt models..."
-    dbt deps
+    {{DBT_DEPS_COMMAND}}
     {{DBT_RUN_COMMAND}}
     @echo "✅ dbt models built successfully"
 

@@ -568,6 +568,19 @@ python3 scripts/fetch_from_api.py --output data/records.csv
 echo "Using static data - no download needed"
 ```
 
+#### **{{DBT_DEPS_COMMAND}}**
+Install dbt dependencies (or skip for API projects):
+
+**Example (data projects):**
+```bash
+dbt deps
+```
+
+**Example (API projects):**
+```bash
+echo "🔌 API-based project - no dbt dependencies"
+```
+
 #### **{{DBT_RUN_COMMAND}}**
 Replace with your dbt run command:
 

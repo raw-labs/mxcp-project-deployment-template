@@ -22,6 +22,10 @@ set -e
 #                             Used in: justfile.template
 #                             Default: python3 scripts/download_real_data.py --output data/licenses.csv
 #
+# {{DBT_DEPS_COMMAND}}      - dbt deps command or placeholder for API projects
+#                             Used in: justfile.template
+#                             Default: dbt deps
+#
 # {{DBT_RUN_COMMAND}}       - dbt run command with project-specific vars
 #                             Used in: justfile.template
 #                             Default: dbt run --vars '{"licenses_file": "data/licenses.csv"}'
@@ -208,6 +212,7 @@ if safe_copy "justfile.template" "justfile" "task runner"; then
         data)
             # Local data files (e.g., CSV in data/ directory)
             sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|@echo '📁 Using local data files from data/ directory'|g" justfile
+            sed -i "s|{{DBT_DEPS_COMMAND}}|dbt deps|g" justfile
             sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
             sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
             sed -i "s|{{API_TEST_COMMAND}}|@echo '📊 Data project - no API tests needed'|g" justfile
@@ -215,6 +220,7 @@ if safe_copy "justfile.template" "justfile" "task runner"; then
         remote_data)
             # Remote data download (e.g., from S3)
             sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|python3 scripts/download_real_data.py --output data/licenses.csv|g" justfile
+            sed -i "s|{{DBT_DEPS_COMMAND}}|dbt deps|g" justfile
             sed -i "s|{{DBT_RUN_COMMAND}}|dbt run --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
             sed -i "s|{{DBT_TEST_COMMAND}}|dbt test --vars '{\"licenses_file\": \"data/licenses.csv\"}'|g" justfile
             sed -i "s|{{API_TEST_COMMAND}}|@echo '📊 Data project - no API tests needed'|g" justfile
@@ -222,6 +228,7 @@ if safe_copy "justfile.template" "justfile" "task runner"; then
         api)
             # API-based project (no data download or dbt)
             sed -i "s|{{DATA_DOWNLOAD_COMMAND}}|@echo '🔌 API-based project - no data download needed'|g" justfile
+            sed -i "s|{{DBT_DEPS_COMMAND}}|@echo '🔌 API-based project - no dbt dependencies'|g" justfile
             sed -i "s|{{DBT_RUN_COMMAND}}|@echo '🔌 API-based project - no dbt models'|g" justfile
             sed -i "s|{{DBT_TEST_COMMAND}}|@echo '🔌 API-based project - no dbt tests'|g" justfile
             sed -i "s|{{API_TEST_COMMAND}}|python tests/test.py api|g" justfile
