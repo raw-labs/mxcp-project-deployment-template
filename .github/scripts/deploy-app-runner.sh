@@ -20,6 +20,8 @@ export AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-YOUR_AWS_ACCOUNT_ID}"
 export SERVICE_NAME="${SERVICE_NAME:-your-project-mxcp-server}"
 export ECR_REPOSITORY="${ECR_REPOSITORY:-your-project-mxcp-server}"
+export CPU_SIZE="${CPU_SIZE:-0.5 vCPU}"
+export MEMORY_SIZE="${MEMORY_SIZE:-2 GB}"
 
 # Validate critical configuration
 if [[ "$AWS_ACCOUNT_ID" == "YOUR_AWS_ACCOUNT_ID" ]]; then
@@ -43,6 +45,8 @@ echo "================================================"
 echo "Service: $SERVICE_NAME"
 echo "Region: $AWS_REGION"
 echo "ECR Image: $ECR_IMAGE_URI"
+echo "CPU: $CPU_SIZE"
+echo "Memory: $MEMORY_SIZE"
 echo ""
 
 # Step 1: Cleanup failed services (BEGINNING of deployment process)
@@ -108,8 +112,8 @@ else
             }
         }' \
         --instance-configuration '{
-            "Cpu": "4 vCPU",
-            "Memory": "8 GB"
+            "Cpu": "'$CPU_SIZE'",
+            "Memory": "'$MEMORY_SIZE'"
         }' \
         --health-check-configuration '{
             "Protocol": "HTTP",

@@ -40,6 +40,8 @@ gh variable set AWS_ACCOUNT_ID --body "your-aws-account-id" [--repo your-org/{{P
 gh variable set AWS_REGION --body "your-aws-region" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 gh variable set APP_RUNNER_SERVICE --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
+gh variable set CPU_SIZE --body "1 vCPU" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
+gh variable set MEMORY_SIZE --body "4 GB" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 
 # Note: These are OPTIONAL overrides. Base values come from deployment/config.env
 # Only set these if you need to override the config.env values

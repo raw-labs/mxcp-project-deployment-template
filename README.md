@@ -233,6 +233,8 @@ gh variable set AWS_ACCOUNT_ID --body "684130658470"    # Override AWS account I
 gh variable set AWS_REGION --body "eu-west-1"           # Override AWS region
 gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
 gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
+gh variable set CPU_SIZE --body "1 vCPU"                 # Override CPU allocation
+gh variable set MEMORY_SIZE --body "4 GB"                # Override memory allocation
 ```
 
 **GitHub Secrets** (Settings → Secrets and variables → Actions → Secrets):

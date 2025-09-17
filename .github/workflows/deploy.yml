@@ -133,18 +133,30 @@ jobs:
           export APP_RUNNER_SERVICE="${{ vars.APP_RUNNER_SERVICE }}"
           echo "📝 APP_RUNNER_SERVICE overridden by GitHub Variable: $APP_RUNNER_SERVICE"
         fi
+        if [ -n "${{ vars.CPU_SIZE }}" ]; then
+          export CPU_SIZE="${{ vars.CPU_SIZE }}"
+          echo "📝 CPU_SIZE overridden by GitHub Variable: $CPU_SIZE"
+        fi
+        if [ -n "${{ vars.MEMORY_SIZE }}" ]; then
+          export MEMORY_SIZE="${{ vars.MEMORY_SIZE }}"
+          echo "📝 MEMORY_SIZE overridden by GitHub Variable: $MEMORY_SIZE"
+        fi
         
         # Export to GITHUB_ENV for subsequent steps
         echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
         echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
         echo "ECR_REPOSITORY=$ECR_REPOSITORY" >> $GITHUB_ENV
         echo "APP_RUNNER_SERVICE=$APP_RUNNER_SERVICE" >> $GITHUB_ENV
+        echo "CPU_SIZE=$CPU_SIZE" >> $GITHUB_ENV
+        echo "MEMORY_SIZE=$MEMORY_SIZE" >> $GITHUB_ENV
         
         echo "📊 Final configuration:"
         echo "   AWS_REGION=$AWS_REGION"
         echo "   AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID"
         echo "   ECR_REPOSITORY=$ECR_REPOSITORY"
         echo "   APP_RUNNER_SERVICE=$APP_RUNNER_SERVICE"
+        echo "   CPU_SIZE=$CPU_SIZE"
+        echo "   MEMORY_SIZE=$MEMORY_SIZE"
     
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -160,6 +172,8 @@ jobs:
         echo "AWS_REGION=${{ env.AWS_REGION }}" >> .github/config.env
         echo "SERVICE_NAME=${{ env.APP_RUNNER_SERVICE }}" >> .github/config.env
         echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}" >> .github/config.env
+        echo "CPU_SIZE=${{ env.CPU_SIZE }}" >> .github/config.env
+        echo "MEMORY_SIZE=${{ env.MEMORY_SIZE }}" >> .github/config.env
     
     
     - name: Build and push Docker image
