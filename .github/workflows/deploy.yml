@@ -14,7 +14,7 @@ on:
           - production
           - staging
 
-# Configuration loaded from deployment/config.env by deploy-app-runner.sh
+# Configuration loaded from deployment/config.env with GitHub Variables as overrides
 
 jobs:
   check-secrets:
@@ -40,39 +40,54 @@ jobs:
       run: |
         echo "🔍 Validating RAW Labs deployment configuration..."
         
-        # Check required GitHub variables are set
-        if [ -z "${{ vars.AWS_ACCOUNT_ID }}" ]; then
-          echo "❌ AWS_ACCOUNT_ID variable not set"
+        # Load configuration from config.env and GitHub Variables
+        if [ -f "deployment/config.env" ]; then
+          set -a
+          source deployment/config.env
+          set +a
+          echo "✅ Loaded defaults from deployment/config.env"
+        fi
+        
+        # Override with GitHub Variables if set
+        [ -n "${{ vars.AWS_REGION }}" ] && AWS_REGION="${{ vars.AWS_REGION }}"
+        [ -n "${{ vars.AWS_ACCOUNT_ID }}" ] && AWS_ACCOUNT_ID="${{ vars.AWS_ACCOUNT_ID }}"
+        [ -n "${{ vars.ECR_REPOSITORY }}" ] && ECR_REPOSITORY="${{ vars.ECR_REPOSITORY }}"
+        [ -n "${{ vars.APP_RUNNER_SERVICE }}" ] && APP_RUNNER_SERVICE="${{ vars.APP_RUNNER_SERVICE }}"
+        
+        # Validate required values exist (from either source)
+        if [ -z "$AWS_ACCOUNT_ID" ]; then
+          echo "❌ AWS_ACCOUNT_ID not set (neither in config.env nor GitHub Variables)"
           exit 1
         fi
         
-        if [ -z "${{ vars.AWS_REGION }}" ]; then
-          echo "❌ AWS_REGION variable not set"
+        if [ -z "$AWS_REGION" ]; then
+          echo "❌ AWS_REGION not set (neither in config.env nor GitHub Variables)"
           exit 1
         fi
         
-        if [ -z "${{ vars.ECR_REPOSITORY }}" ]; then
-          echo "❌ ECR_REPOSITORY variable not set"
+        if [ -z "$ECR_REPOSITORY" ]; then
+          echo "❌ ECR_REPOSITORY not set (neither in config.env nor GitHub Variables)"
           exit 1
         fi
         
-        if [ -z "${{ vars.APP_RUNNER_SERVICE }}" ]; then
-          echo "❌ APP_RUNNER_SERVICE variable not set"
+        if [ -z "$APP_RUNNER_SERVICE" ]; then
+          echo "❌ APP_RUNNER_SERVICE not set (neither in config.env nor GitHub Variables)"
           exit 1
         fi
         
         # RAW-specific validations
-        if [ "${{ vars.AWS_ACCOUNT_ID }}" != "684130658470" ]; then
+        if [ "$AWS_ACCOUNT_ID" != "684130658470" ]; then
           echo "⚠️  Warning: AWS_ACCOUNT_ID is not the standard RAW Labs account (684130658470)"
-          echo "   Current value: ${{ vars.AWS_ACCOUNT_ID }}"
+          echo "   Current value: $AWS_ACCOUNT_ID"
         fi
         
-        if [ "${{ vars.AWS_REGION }}" != "eu-west-1" ]; then
+        if [ "$AWS_REGION" != "eu-west-1" ]; then
           echo "⚠️  Warning: AWS_REGION is not the standard RAW Labs region (eu-west-1)"
-          echo "   Current value: ${{ vars.AWS_REGION }}"
+          echo "   Current value: $AWS_REGION"
         fi
         
-        echo "✅ All required variables are configured"
+        echo "✅ All required configuration values are set"
+        echo "   Source: deployment/config.env + GitHub Variables overrides"
     
     - name: Validate YAML configurations
       run: |
@@ -90,48 +105,87 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Load configuration
+      run: |
+        echo "📋 Loading configuration..."
+        # First, source defaults from config.env
+        if [ -f "deployment/config.env" ]; then
+          set -a  # automatically export all variables
+          source deployment/config.env
+          set +a
+          echo "✅ Loaded defaults from deployment/config.env"
+        fi
+        
+        # Then, override with GitHub Variables if set
+        if [ -n "${{ vars.AWS_REGION }}" ]; then
+          export AWS_REGION="${{ vars.AWS_REGION }}"
+          echo "📝 AWS_REGION overridden by GitHub Variable: $AWS_REGION"
+        fi
+        if [ -n "${{ vars.AWS_ACCOUNT_ID }}" ]; then
+          export AWS_ACCOUNT_ID="${{ vars.AWS_ACCOUNT_ID }}"
+          echo "📝 AWS_ACCOUNT_ID overridden by GitHub Variable: $AWS_ACCOUNT_ID"
+        fi
+        if [ -n "${{ vars.ECR_REPOSITORY }}" ]; then
+          export ECR_REPOSITORY="${{ vars.ECR_REPOSITORY }}"
+          echo "📝 ECR_REPOSITORY overridden by GitHub Variable: $ECR_REPOSITORY"
+        fi
+        if [ -n "${{ vars.APP_RUNNER_SERVICE }}" ]; then
+          export APP_RUNNER_SERVICE="${{ vars.APP_RUNNER_SERVICE }}"
+          echo "📝 APP_RUNNER_SERVICE overridden by GitHub Variable: $APP_RUNNER_SERVICE"
+        fi
+        
+        # Export to GITHUB_ENV for subsequent steps
+        echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
+        echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
+        echo "ECR_REPOSITORY=$ECR_REPOSITORY" >> $GITHUB_ENV
+        echo "APP_RUNNER_SERVICE=$APP_RUNNER_SERVICE" >> $GITHUB_ENV
+        
+        echo "📊 Final configuration:"
+        echo "   AWS_REGION=$AWS_REGION"
+        echo "   AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID"
+        echo "   ECR_REPOSITORY=$ECR_REPOSITORY"
+        echo "   APP_RUNNER_SERVICE=$APP_RUNNER_SERVICE"
+    
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ vars.AWS_REGION }}
+        aws-region: ${{ env.AWS_REGION }}
     
     - name: Set up environment
       run: |
-        # App Runner deployment will be handled in separate step
-        
-        # Create config file for App Runner deployment script
-        echo "AWS_ACCOUNT_ID=${{ vars.AWS_ACCOUNT_ID }}" > .github/config.env
-        echo "AWS_REGION=${{ vars.AWS_REGION }}" >> .github/config.env
-        echo "SERVICE_NAME=${{ vars.APP_RUNNER_SERVICE }}" >> .github/config.env
-        echo "ECR_REPOSITORY=${{ vars.ECR_REPOSITORY }}" >> .github/config.env
+        # Create config file for App Runner deployment script (already have values in env)
+        echo "AWS_ACCOUNT_ID=${{ env.AWS_ACCOUNT_ID }}" > .github/config.env
+        echo "AWS_REGION=${{ env.AWS_REGION }}" >> .github/config.env
+        echo "SERVICE_NAME=${{ env.APP_RUNNER_SERVICE }}" >> .github/config.env
+        echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}" >> .github/config.env
     
     
     - name: Build and push Docker image
       run: |
         # Login to ECR
-        aws ecr get-login-password --region ${{ vars.AWS_REGION }} | \
-        docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+        aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+        docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
         
         # Create ECR repository if it doesn't exist
-        aws ecr describe-repositories --repository-names ${{ vars.ECR_REPOSITORY }} --region ${{ vars.AWS_REGION }} || \
-        aws ecr create-repository --repository-name ${{ vars.ECR_REPOSITORY }} --region ${{ vars.AWS_REGION }} --image-scanning-configuration scanOnPush=true
+        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
+        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true
         
         # Build from project root with deployment/Dockerfile and data credentials
         docker build -f deployment/Dockerfile \
           --build-arg MXCP_DATA_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }} \
           --build-arg MXCP_DATA_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }} \
           --build-arg OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-          -t ${{ vars.ECR_REPOSITORY }}:${{ github.sha }} .
+          -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
         
         # Tag for ECR
-        docker tag ${{ vars.ECR_REPOSITORY }}:${{ github.sha }} ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
-        docker tag ${{ vars.ECR_REPOSITORY }}:${{ github.sha }} ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
+        docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
         
         # Push to ECR
-        docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
-        docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/${{ vars.ECR_REPOSITORY }}:latest
+        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:latest
     
     - name: Deploy to AWS App Runner
       run: |
@@ -143,9 +197,9 @@ jobs:
         echo "📊 Monitoring App Runner service creation/update..."
         
         # Discover service ARN dynamically by name (ARN changes when service is recreated)
-        echo "🔍 Finding service ARN for: ${{ vars.APP_RUNNER_SERVICE }}"
-        SERVICE_ARN=$(aws apprunner list-services --region ${{ vars.AWS_REGION }} \
-          --query "ServiceSummaryList[?ServiceName=='${{ vars.APP_RUNNER_SERVICE }}'].ServiceArn | [0]" \
+        echo "🔍 Finding service ARN for: ${{ env.APP_RUNNER_SERVICE }}"
+        SERVICE_ARN=$(aws apprunner list-services --region ${{ env.AWS_REGION }} \
+          --query "ServiceSummaryList[?ServiceName=='${{ env.APP_RUNNER_SERVICE }}'].ServiceArn | [0]" \
           --output text)
         
         if [ "$SERVICE_ARN" == "None" ] || [ -z "$SERVICE_ARN" ]; then
@@ -199,7 +253,7 @@ jobs:
         
         # Get service URL
         SERVICE_URL=$(aws apprunner describe-service \
-          --service-arn "arn:aws:apprunner:${{ vars.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ vars.APP_RUNNER_SERVICE }}" \
+          --service-arn "arn:aws:apprunner:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:service/${{ env.APP_RUNNER_SERVICE }}" \
           --query 'Service.ServiceUrl' --output text)
         
         echo "🌐 Service URL: https://$SERVICE_URL"
@@ -230,12 +284,12 @@ jobs:
         # Configuration from GitHub variables
         
         echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-        echo "- **Service**: ${{ vars.APP_RUNNER_SERVICE }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Region**: ${{ vars.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Service**: ${{ env.APP_RUNNER_SERVICE }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
         
         # Get service URL if deployment succeeded
-        if SERVICE_URL=$(aws apprunner describe-service --service-arn "arn:aws:apprunner:${{ vars.AWS_REGION }}:${{ vars.AWS_ACCOUNT_ID }}:service/${{ vars.APP_RUNNER_SERVICE }}" --query 'Service.ServiceUrl' --output text 2>/dev/null); then
+        if SERVICE_URL=$(aws apprunner describe-service --service-arn "arn:aws:apprunner:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:service/${{ env.APP_RUNNER_SERVICE }}" --query 'Service.ServiceUrl' --output text 2>/dev/null); then
           echo "- **Service URL**: https://$SERVICE_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **MCP Endpoint**: https://$SERVICE_URL/mcp" >> $GITHUB_STEP_SUMMARY
         fi

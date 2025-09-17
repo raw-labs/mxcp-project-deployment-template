@@ -8,6 +8,7 @@ This directory contains templates and tools for deploying MXCP projects in Squir
 - Simplified eval commands (`mxcp evals` runs all tests)
 - Added OPENAI_API_KEY to Docker build process
 - Uses `just` task runner instead of individual scripts
+- **IMPORTANT**: Now uses GitHub Variables (not secrets) for AWS configuration
 
 ## ⚠️ Important: Template Files
 
@@ -64,6 +65,29 @@ Use `merge-from-raw.sh` to safely merge updates from RAW Labs while preserving y
 
 ### Working Scripts (use as-is)
 - `merge-from-raw.sh` - Merge updates from RAW Labs
+
+## Configuration Requirements
+
+### Base Configuration (deployment/config.env)
+Default values are stored in `deployment/config.env`:
+- Contains AWS account, region, ECR repository settings
+- Tracked in git for documentation
+- Can be overridden by GitHub Variables
+
+### GitHub Variables (Repository Settings → Secrets and variables → Variables)
+These are **optional overrides** for config.env values:
+- `AWS_ACCOUNT_ID` - Override the AWS account ID from config.env
+- `AWS_REGION` - Override the AWS region from config.env
+- `ECR_REPOSITORY` - Override the ECR repository name from config.env
+
+### GitHub Secrets (Repository Settings → Secrets and variables → Secrets)
+These are **sensitive** values that must be kept secret:
+- `AWS_ACCESS_KEY_ID` - AWS credentials for ECR push
+- `AWS_SECRET_ACCESS_KEY` - AWS credentials for ECR push
+- `MXCP_DATA_ACCESS_KEY_ID` - For S3 data access (if needed)
+- `MXCP_DATA_SECRET_ACCESS_KEY` - For S3 data access (if needed)
+- `OPENAI_API_KEY` - For LLM functionality
+- `ANTHROPIC_API_KEY` - Optional, for Claude models
 
 ## Required Customizations
 

@@ -217,13 +217,20 @@ mxcp-project-deployment-template/
 | **GitHub Account** | CI/CD and version control | [GitHub Signup](https://github.com/join) |
 | **IAM Role** | `AppRunnerECRAccessRole` | See ENVIRONMENT.md |
 
-### 🔑 GitHub Configuration Required
+### 🔑 Configuration Approach: Hybrid (config.env + GitHub Variables)
+
+The template uses a **hybrid configuration approach**:
+1. **Base defaults** are stored in `deployment/config.env` (tracked in git)
+2. **Environment-specific overrides** use GitHub Variables  
+3. **Secrets** always use GitHub Secrets (never in config.env)
+
+This provides self-documenting configuration with secure overrides.
 
 **GitHub Variables** (Settings → Secrets and variables → Actions → Variables):
 ```bash
-# AWS deployment configuration (ALL FOUR are required!)
-gh variable set AWS_ACCOUNT_ID --body "684130658470"    # Your AWS account ID
-gh variable set AWS_REGION --body "eu-west-1"           # Your AWS region
+# AWS deployment configuration (optional overrides for config.env values)
+gh variable set AWS_ACCOUNT_ID --body "684130658470"    # Override AWS account ID
+gh variable set AWS_REGION --body "eu-west-1"           # Override AWS region
 gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
 gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
 ```

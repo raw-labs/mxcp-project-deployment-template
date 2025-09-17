@@ -25,6 +25,42 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Validate configuration
+      run: |
+        echo "🔍 Validating configuration..."
+        
+        # Load configuration from config.env and GitHub Variables
+        if [ -f "deployment/config.env" ]; then
+          set -a
+          source deployment/config.env
+          set +a
+          echo "✅ Loaded defaults from deployment/config.env"
+        fi
+        
+        # Override with GitHub Variables if set
+        [ -n "${{ vars.AWS_REGION }}" ] && AWS_REGION="${{ vars.AWS_REGION }}"
+        [ -n "${{ vars.AWS_ACCOUNT_ID }}" ] && AWS_ACCOUNT_ID="${{ vars.AWS_ACCOUNT_ID }}"
+        [ -n "${{ vars.ECR_REPOSITORY }}" ] && ECR_REPOSITORY="${{ vars.ECR_REPOSITORY }}"
+        
+        # Validate required values exist (from either source)
+        if [ -z "$AWS_ACCOUNT_ID" ]; then
+          echo "❌ AWS_ACCOUNT_ID not set (neither in config.env nor GitHub Variables)"
+          exit 1
+        fi
+        
+        if [ -z "$AWS_REGION" ]; then
+          echo "❌ AWS_REGION not set (neither in config.env nor GitHub Variables)"
+          exit 1
+        fi
+        
+        if [ -z "$ECR_REPOSITORY" ]; then
+          echo "❌ ECR_REPOSITORY not set (neither in config.env nor GitHub Variables)"
+          exit 1
+        fi
+        
+        echo "✅ All required configuration values are set"
+        echo "   Source: deployment/config.env + GitHub Variables overrides"
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -47,16 +83,41 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Load configuration from deployment/config.env
+    - name: Load configuration
       run: |
+        echo "📋 Loading configuration..."
+        # First, source defaults from config.env
         if [ -f "deployment/config.env" ]; then
+          set -a  # automatically export all variables
           source deployment/config.env
-          echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
-          echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
-          echo "ECR_REPOSITORY=$ECR_REPOSITORY" >> $GITHUB_ENV
-          echo "📋 Loaded: ECR_REPOSITORY=$ECR_REPOSITORY"
+          set +a
+          echo "✅ Loaded defaults from deployment/config.env"
         fi
+        
+        # Then, override with GitHub Variables if set
+        if [ -n "${{ vars.AWS_REGION }}" ]; then
+          export AWS_REGION="${{ vars.AWS_REGION }}"
+          echo "📝 AWS_REGION overridden by GitHub Variable: $AWS_REGION"
+        fi
+        if [ -n "${{ vars.AWS_ACCOUNT_ID }}" ]; then
+          export AWS_ACCOUNT_ID="${{ vars.AWS_ACCOUNT_ID }}"
+          echo "📝 AWS_ACCOUNT_ID overridden by GitHub Variable: $AWS_ACCOUNT_ID"
+        fi
+        if [ -n "${{ vars.ECR_REPOSITORY }}" ]; then
+          export ECR_REPOSITORY="${{ vars.ECR_REPOSITORY }}"
+          echo "📝 ECR_REPOSITORY overridden by GitHub Variable: $ECR_REPOSITORY"
+        fi
+        
+        # Export to GITHUB_ENV for subsequent steps
+        echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
+        echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
+        echo "ECR_REPOSITORY=$ECR_REPOSITORY" >> $GITHUB_ENV
         echo "ECR_REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com" >> $GITHUB_ENV
+        
+        echo "📊 Final configuration:"
+        echo "   AWS_REGION=$AWS_REGION"
+        echo "   AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID"
+        echo "   ECR_REPOSITORY=$ECR_REPOSITORY"
     
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4

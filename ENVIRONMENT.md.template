@@ -2,6 +2,25 @@
 
 This document lists all environment variables and secrets required for deploying the {{PROJECT_NAME}} MXCP Server.
 
+## Configuration Approach
+
+This project uses a **hybrid configuration approach**:
+
+1. **Base Configuration** (`deployment/config.env`):
+   - Contains default values for all non-sensitive settings
+   - Tracked in git for documentation and local testing
+   - Provides sensible defaults that work for most cases
+
+2. **GitHub Variables** (optional overrides):
+   - Override specific values from config.env when needed
+   - Useful for different environments (staging, production)
+   - Only set these if you need different values than config.env
+
+3. **GitHub Secrets** (required):
+   - Sensitive values like API keys and credentials
+   - Never stored in config.env
+   - Always required to be set in GitHub
+
 ## Deployment Options
 
 This project supports two deployment patterns:
@@ -22,11 +41,11 @@ gh variable set AWS_REGION --body "your-aws-region" [--repo your-org/{{PROJECT_N
 gh variable set ECR_REPOSITORY --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 gh variable set APP_RUNNER_SERVICE --body "{{PROJECT_NAME}}-mxcp-server" [--repo your-org/{{PROJECT_NAME}}-mxcp-server]
 
-# Example for RAW Labs (ALL FOUR are required!):
-# gh variable set AWS_ACCOUNT_ID --body "684130658470"
-# gh variable set AWS_REGION --body "eu-west-1"
-# gh variable set ECR_REPOSITORY --body "uae-licenses-mxcp-server"
-# gh variable set APP_RUNNER_SERVICE --body "uae-licenses-mxcp-server"
+# Note: These are OPTIONAL overrides. Base values come from deployment/config.env
+# Only set these if you need to override the config.env values
+# Example: Override for production deployment
+# gh variable set AWS_ACCOUNT_ID --body "123456789012"
+# gh variable set AWS_REGION --body "us-east-1"
 ```
 
 ### Repository Secrets (Settings → Secrets)
