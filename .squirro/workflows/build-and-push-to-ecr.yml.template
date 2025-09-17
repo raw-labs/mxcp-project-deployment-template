@@ -41,6 +41,8 @@ jobs:
         [ -n "${{ vars.AWS_REGION }}" ] && AWS_REGION="${{ vars.AWS_REGION }}"
         [ -n "${{ vars.AWS_ACCOUNT_ID }}" ] && AWS_ACCOUNT_ID="${{ vars.AWS_ACCOUNT_ID }}"
         [ -n "${{ vars.ECR_REPOSITORY }}" ] && ECR_REPOSITORY="${{ vars.ECR_REPOSITORY }}"
+        [ -n "${{ vars.CPU_SIZE }}" ] && CPU_SIZE="${{ vars.CPU_SIZE }}"
+        [ -n "${{ vars.MEMORY_SIZE }}" ] && MEMORY_SIZE="${{ vars.MEMORY_SIZE }}"
         
         # Validate required values exist (from either source)
         if [ -z "$AWS_ACCOUNT_ID" ]; then
@@ -107,17 +109,29 @@ jobs:
           export ECR_REPOSITORY="${{ vars.ECR_REPOSITORY }}"
           echo "📝 ECR_REPOSITORY overridden by GitHub Variable: $ECR_REPOSITORY"
         fi
+        if [ -n "${{ vars.CPU_SIZE }}" ]; then
+          export CPU_SIZE="${{ vars.CPU_SIZE }}"
+          echo "📝 CPU_SIZE overridden by GitHub Variable: $CPU_SIZE"
+        fi
+        if [ -n "${{ vars.MEMORY_SIZE }}" ]; then
+          export MEMORY_SIZE="${{ vars.MEMORY_SIZE }}"
+          echo "📝 MEMORY_SIZE overridden by GitHub Variable: $MEMORY_SIZE"
+        fi
         
         # Export to GITHUB_ENV for subsequent steps
         echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
         echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
         echo "ECR_REPOSITORY=$ECR_REPOSITORY" >> $GITHUB_ENV
         echo "ECR_REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com" >> $GITHUB_ENV
+        echo "CPU_SIZE=$CPU_SIZE" >> $GITHUB_ENV
+        echo "MEMORY_SIZE=$MEMORY_SIZE" >> $GITHUB_ENV
         
         echo "📊 Final configuration:"
         echo "   AWS_REGION=$AWS_REGION"
         echo "   AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID"
         echo "   ECR_REPOSITORY=$ECR_REPOSITORY"
+        echo "   CPU_SIZE=$CPU_SIZE"
+        echo "   MEMORY_SIZE=$MEMORY_SIZE"
     
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4

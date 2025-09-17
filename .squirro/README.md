@@ -79,6 +79,8 @@ These are **optional overrides** for config.env values:
 - `AWS_ACCOUNT_ID` - Override the AWS account ID from config.env
 - `AWS_REGION` - Override the AWS region from config.env
 - `ECR_REPOSITORY` - Override the ECR repository name from config.env
+- `CPU_SIZE` - Override CPU allocation (e.g., "1 vCPU", "4 vCPU")
+- `MEMORY_SIZE` - Override memory allocation (e.g., "2 GB", "8 GB")
 
 ### GitHub Secrets (Repository Settings → Secrets and variables → Secrets)
 These are **sensitive** values that must be kept secret:

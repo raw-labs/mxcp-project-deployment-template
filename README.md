@@ -65,7 +65,7 @@ graph TB
         ValidateConfig["just validate-config<br/>📝 YAML validation"]
         CiTests["just ci-tests-with-data<br/>🔍 CI tests + data"]
         FullPipeline["just full-pipeline<br/>🏗️ Complete dev pipeline"]
-        TestIntegration["just test-integration<br/>🔧 Integration tests"]
+        TestTools["just test-tools<br/>🔧 Tool tests"]
         PrepareBuild["just prepare-build<br/>📦 Data preparation"]
         TestData["just test-data<br/>🧪 Level 1: dbt tests"]
         TestEvals["just test-evals<br/>🤖 Level 3: LLM evals"]
@@ -90,7 +90,7 @@ graph TB
     %% Workflow Relationships
     Deploy -->|"1. Validation"| CiTests
     Deploy -->|"Fallback"| ValidateConfig
-    Deploy -->|"2. Post-deployment"| TestIntegration
+    Deploy -->|"2. Post-deployment"| TestTools
     
     Test -->|"PR Testing"| FullPipeline
     Test -->|"Fallback"| ValidateConfig
@@ -102,9 +102,9 @@ graph TB
     
     FullPipeline --> PrepareBuild
     FullPipeline --> TestData
-    FullPipeline --> TestIntegration
+    FullPipeline --> TestTools
     
-    TestIntegration -->|"Uses"| Tools
+    TestTools -->|"Uses"| Tools
     TestData -->|"Tests"| Models
 
     %% Docker Build Process
@@ -120,12 +120,12 @@ graph TB
     %% 3-Tiered Testing
     subgraph "🎯 3-Tiered Testing"
         Level1["Level 1: Data Quality<br/>🧪 dbt schema tests<br/>💰 Free"]
-        Level2["Level 2: Integration<br/>🔧 MXCP tools tests<br/>💰 Free"]
+        Level2["Level 2: Integration<br/>🔧 MXCP tools & API tests<br/>💰 Free"]
         Level3["Level 3: LLM Evaluation<br/>🤖 AI behavior tests<br/>💰 Costs Apply"]
     end
 
     TestData -.->|"Implements"| Level1
-    TestIntegration -.->|"Implements"| Level2
+    TestTools -.->|"Implements"| Level2
     TestEvals -.->|"Implements"| Level3
 
     %% Styling
@@ -136,7 +136,7 @@ graph TB
     classDef testing fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
     class Deploy,Test,Release workflow
-    class ValidateConfig,CiTests,FullPipeline,TestIntegration,PrepareBuild,TestData,TestEvals justfile
+    class ValidateConfig,CiTests,FullPipeline,TestTools,PrepareBuild,TestData,TestEvals justfile
     class Dockerfile,ConfigEnv,MxcpSite,UserConfig,StartSh deployment
     class Scripts,Tools,Models project
     class Level1,Level2,Level3 testing
@@ -688,7 +688,7 @@ just dev-full              # Download data + build + test all 3 levels
 
 # Individual testing levels
 just test-data             # Level 1: dbt schema tests
-just test-integration      # Level 2: MXCP tools tests  
+just test-tools            # Level 2: MXCP tools tests  
 just test-evals           # Level 3: LLM evaluation tests (requires OPENAI_API_KEY)
 
 # CI/CD pipeline
