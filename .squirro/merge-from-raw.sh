@@ -98,7 +98,7 @@ else
         echo "🎉 All conflicts auto-resolved!"
         git commit -m "Merge updates from RAW Labs
 
-- Merged upstream/main from rawlabs/uae-mxcp
+- Merged upstream/main from RAW Labs MXCP project
 - Preserved Squirro-specific configurations
 - Auto-resolved workflow and profile conflicts"
     fi
@@ -114,7 +114,8 @@ echo "   - Squirro configurations preserved"
 echo ""
 echo "🧪 Recommended next steps:"
 echo "   1. Test the updated system:"
-echo "      python -c \"import yaml; yaml.safe_load(open('mxcp-site.yml'))\""
+echo "      just validate-config"
+echo "      just test-all"
 echo "   2. Run your deployment pipeline to verify everything works"
 echo "   3. If issues arise, restore from backup:"
 echo "      git reset --hard $BACKUP_BRANCH"

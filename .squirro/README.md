@@ -2,12 +2,17 @@
 
 This directory contains templates and tools for deploying MXCP projects in Squirro's infrastructure.
 
+## Recent Updates
+- Updated for new testing structure (`test-tools`, `test-api`)
+- Added support for project types (data, remote_data, api)
+- Simplified eval commands (`mxcp evals` runs all tests)
+- Added OPENAI_API_KEY to Docker build process
+- Uses `just` task runner instead of individual scripts
+
 ## ⚠️ Important: Template Files
 
 Most files in this directory are **TEMPLATES** that contain placeholders. They must be customized before use:
 - `setup-for-squirro.sh.template` - Contains {{PROJECT_NAME}} placeholder
-- `ENVIRONMENT-GUIDE.md.template` - Project-specific deployment guide
-- `README.md.template` - Project-specific README for Squirro teams
 - `workflows/build-and-push-to-ecr.yml.template` - ECR deployment workflow
 
 ## Purpose

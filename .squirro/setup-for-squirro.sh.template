@@ -1,18 +1,18 @@
 #!/bin/bash
 set -e
 
-# 🔧 Squirro Setup Script for UAE MXCP Server
+# 🔧 Squirro Setup Script for {{PROJECT_NAME}} MXCP Server
 # ============================================
 # ⚠️  IMPORTANT: This script creates TEMPLATE files that MUST be edited by Squirro
 # ⚠️  DO NOT use these files as-is - they contain placeholder values
 # ⚠️  Squirro MUST customize all configuration for their environment
 
-echo "🔧 Setting up UAE MXCP Server for Squirro deployment..."
+echo "🔧 Setting up {{PROJECT_NAME}} MXCP Server for Squirro deployment..."
 echo "⚠️  WARNING: This creates TEMPLATE files that MUST be edited!"
 
 # Check if we're in the right repository
 if [ ! -f "mxcp-site.yml" ] || [ ! -d "tools" ]; then
-    echo "❌ Error: This doesn't appear to be a UAE MXCP repository"
+    echo "❌ Error: This doesn't appear to be an MXCP repository"
     echo "   Make sure you're in the root directory of the forked repository"
     exit 1
 fi
@@ -40,7 +40,7 @@ fi
 # 4. Add upstream remote for RAW Labs updates
 echo "🔗 Setting up upstream remote for RAW Labs updates..."
 if ! git remote | grep -q "upstream"; then
-    git remote add upstream https://github.com/raw-labs/uae-mxcp-server.git
+    git remote add upstream https://github.com/raw-labs/{{PROJECT_NAME}}-mxcp-server.git
     echo "   ✅ Added upstream remote"
 else
     echo "   ℹ️  Upstream remote already exists"
@@ -53,7 +53,7 @@ cat > profiles-squirro.yml << 'EOF'
 # ⚠️  DO NOT use as-is - customize for your environment
 # ⚠️  Update paths, connection settings, and performance configs
 
-uaeme-licenses-mxcp:
+{{PROJECT_NAME}}-mxcp:
   target: squirro
   outputs:
     squirro:
@@ -93,7 +93,8 @@ echo "   - AWS_SECRET_ACCESS_KEY (for EKS access)"
 echo "   - OPENAI_API_KEY (for testing - optional)"
 echo ""
 echo "4. Test locally first:"
-echo "   ./scripts/run_etl_and_tests.sh"
+echo "   just full-pipeline  # Run complete ETL and tests"
+echo "   just test-all      # Run all tests including evals"
 echo ""
 echo "5. Only after customization, commit and push:"
 echo "   git add -A"

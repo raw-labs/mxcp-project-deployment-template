@@ -30,15 +30,13 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r deployment/requirements.txt
-    
-    - name: Run configuration validation
+    - name: Install just
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Run configuration validation
+      run: |
         just validate-config
 
   build-and-push:
@@ -84,6 +82,7 @@ jobs:
         docker build -f deployment/Dockerfile \
           --build-arg MXCP_DATA_ACCESS_KEY_ID="${{ secrets.MXCP_DATA_ACCESS_KEY_ID }}" \
           --build-arg MXCP_DATA_SECRET_ACCESS_KEY="${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}" \
+          --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
           -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
         
         docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
