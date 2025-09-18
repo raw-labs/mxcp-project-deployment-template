@@ -214,7 +214,22 @@ jobs:
         export AWS_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}
         
         # Set dbt profiles directory
-        export DBT_PROFILES_DIR=${{ github.workspace }}/deployment
+        export DBT_PROFILES_DIR=${{ github.workspace }}
+        
+        # Copy profiles-docker.yml to profiles.yml for dbt to find it
+        cp deployment/profiles-docker.yml profiles.yml
+        
+        # Debug dbt setup
+        echo "🔍 Debug: Checking dbt configuration..."
+        echo "DBT_PROFILES_DIR = $DBT_PROFILES_DIR"
+        if [ -f "profiles.yml" ]; then
+          echo "✅ profiles.yml exists:"
+          head -n 5 profiles.yml
+        fi
+        if [ -f "dbt_project.yml" ]; then
+          echo "📄 dbt_project.yml profile:"
+          grep "^profile:" dbt_project.yml || echo "No profile line found"
+        fi
         
         # Download and prepare data
         # This will be a no-op for API projects (just creates directories)
@@ -243,16 +258,11 @@ jobs:
     - name: Test Docker image with secrets
       run: |
         echo "🧪 Running full test suite with secrets..."
-        # Create env file with all current environment variables that might be needed
-        cat > test.env << EOF
-        OPENAI_API_KEY=$OPENAI_API_KEY
-        ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
-        VERTEC_API_KEY=$VERTEC_API_KEY
-        EOF
+        # Pass ALL environment variables to Docker (including those from env: block)
+        env > test.env
         
-        # Run tests with both config.env and test.env
+        # Run tests with environment variables
         docker run --rm \
-          --env-file deployment/config.env \
           --env-file test.env \
           ${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
           just test-all
