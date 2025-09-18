@@ -212,7 +212,7 @@ jobs:
         
         echo "✅ Data prepared successfully"
     
-    - name: Build and push Docker image
+    - name: Build Docker image and prepare ECR
       run: |
         # Login to ECR
         aws ecr get-login-password --region ${{ env.AWS_REGION }} | \

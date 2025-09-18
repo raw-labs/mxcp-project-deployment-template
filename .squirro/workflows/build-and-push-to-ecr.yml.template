@@ -187,7 +187,7 @@ jobs:
         
         echo "✅ Data prepared successfully"
     
-    - name: Build and push Docker image
+    - name: Build Docker image
       run: |
         echo "🐳 Building Docker image for Squirro..."
         echo "📦 Target ECR: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}"
