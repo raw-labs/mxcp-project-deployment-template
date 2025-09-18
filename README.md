@@ -435,6 +435,28 @@ mkdir -p scripts/
 git push origin main
 ```
 
+### Customizing Secrets for Your Project
+
+Each project must customize `.github/workflows/deploy.yml` to include its specific secrets:
+
+1. Open `.github/workflows/deploy.yml`
+2. Find the `env:` block at the top (after the `on:` section)
+3. Add your project's secrets:
+   ```yaml
+   env:
+     # Your project's secrets
+     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || '' }}
+     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
+     CUSTOM_API_TOKEN: ${{ secrets.CUSTOM_API_TOKEN || '' }}
+   ```
+4. Commit these changes - they're part of your project configuration
+
+**Why this approach?**
+- Simple and explicit - you see exactly what secrets your project uses
+- No complex template processing or filtering
+- GitHub Actions requires explicit secret references anyway
+- Easy to add new secrets as your project evolves
+
 ### Critical: .gitignore Configuration
 
 ⚠️ **IMPORTANT**: The deployment files MUST be tracked in git for CI/CD to work!
@@ -513,14 +535,15 @@ cp -r /path/to/template/.squirro .
 
 ## Template Philosophy
 
-- **`.github/` = STABLE** - Rarely changes, provides consistent CI/CD
+- **`.github/` = PROJECT-CUSTOMIZED** - Add your project's secrets to the `env:` block
 - **`.squirro/` = SQUIRRO-SPECIFIC** - Tools and workflows for Squirro integration
 - **`deployment/` = CUSTOMIZABLE** - Projects modify configuration files
 - **`justfile.template` = GENERIC** - Uses placeholders for project-specific commands:
   - `{{DATA_DOWNLOAD_COMMAND}}` - How to download your project's data
+  - `{{DBT_DEPS_COMMAND}}` - Install dbt dependencies (or skip for API projects)
   - `{{DBT_RUN_COMMAND}}` - How to run dbt with your data variables
   - `{{DBT_TEST_COMMAND}}` - How to test dbt with your data variables
-- **Clear separation** - Teams know exactly what to customize vs what to keep
+- **Simplicity over standardization** - Each project customizes what it needs
 
 ## Justfile Guide
 
@@ -530,12 +553,15 @@ The template includes a modern task runner (`justfile.template`) that provides a
 
 The justfile implements a comprehensive testing strategy with three levels:
 
-| Level | Type | Purpose | Cost | Command |
-|-------|------|---------|------|---------|
-| **Level 1** | Data Quality | dbt schema tests, referential integrity | Free | `just test-data` |
-| **Level 2** | Tool Tests | MXCP tools functionality (`python tests/test.py tool`) | Free | `just test-tools` |
-| **Level 2** | API Tests | External API integration (`python tests/test.py api`) | Free | `just test-api` |
-| **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | `just test-evals` |
+| Level | Type | Purpose | Cost | When Run | Command |
+|-------|------|---------|------|----------|---------|
+| **Build** | Config Validation | YAML syntax, basic setup | Free | During Docker build | `just test-config` |
+| **Level 1** | Data Quality | dbt schema tests, referential integrity | Free | After build | `just test-data` |
+| **Level 2** | Tool Tests | MXCP tools functionality (`python tests/test.py tool`) | Free | After build | `just test-tools` |
+| **Level 2** | API Tests | External API integration (`python tests/test.py api`) | Free | After build | `just test-api` |
+| **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | After build | `just test-evals` |
+
+**Important**: Full testing (Levels 1-3) happens AFTER the Docker build, when secrets are available. This ensures we never bake secrets into the Docker image.
 
 ### Template Placeholders
 

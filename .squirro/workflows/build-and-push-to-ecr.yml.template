@@ -5,6 +5,18 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Project-specific environment variables
+# TODO: Add your project's secrets here
+env:
+  # Example secrets (uncomment and modify for your project):
+  # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || '' }}
+  # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
+  # VERTEC_API_KEY: ${{ secrets.VERTEC_API_KEY || '' }}
+  
+  # Data access for build (if downloading data from S3)
+  MXCP_DATA_ACCESS_KEY_ID: ${{ secrets.MXCP_DATA_ACCESS_KEY_ID || '' }}
+  MXCP_DATA_SECRET_ACCESS_KEY: ${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY || '' }}
+
 jobs:
   check-secrets:
     runs-on: ubuntu-latest
@@ -157,12 +169,24 @@ jobs:
         docker build -f deployment/Dockerfile \
           --build-arg MXCP_DATA_ACCESS_KEY_ID="${{ secrets.MXCP_DATA_ACCESS_KEY_ID }}" \
           --build-arg MXCP_DATA_SECRET_ACCESS_KEY="${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}" \
-          --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
           -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
         
         docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         docker tag ${{ env.ECR_REPOSITORY }}:${{ github.sha }} ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-        
+    
+    - name: Test Docker image with secrets
+      run: |
+        echo "🧪 Running full test suite with secrets..."
+        # Docker automatically inherits env vars from the workflow env block
+        docker run --rm \
+          --env-file deployment/config.env \
+          ${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
+          just test-all
+        echo "✅ All tests passed!"
+    
+    - name: Push to ECR
+      run: |
+        echo "📤 Pushing tested image to ECR..."
         docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
         

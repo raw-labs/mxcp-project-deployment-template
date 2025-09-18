@@ -21,6 +21,16 @@ This project uses a **hybrid configuration approach**:
    - Never stored in config.env
    - Always required to be set in GitHub
 
+4. **Project-Specific Workflow** (`.github/workflows/deploy.yml`):
+   - Each project customizes the `env:` block with its specific secrets
+   - Only list the secrets YOUR project actually needs
+   - Example:
+     ```yaml
+     env:
+       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || '' }}
+       YOUR_API_KEY: ${{ secrets.YOUR_API_KEY || '' }}
+     ```
+
 ## Deployment Options
 
 This project supports two deployment patterns:

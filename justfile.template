@@ -39,12 +39,17 @@ test-evals:
     -{{MXCP_EVALS_COMMANDS}}
     @echo "✅ LLM evaluation tests completed (failures are non-blocking)"
 
-# Validate YAML configurations (replaces run_tests.sh)
+# Validate YAML configurations (build-safe, no secrets required)
 test-config:
     @echo "📝 Validating MXCP configuration..."
     python -c "import yaml; yaml.safe_load(open('mxcp-site.yml')); print('✅ mxcp-site.yml is valid')"
     @echo "🔧 Validating tool configurations..."
     python -c "import yaml, glob; [yaml.safe_load(open(f)) for f in glob.glob('tools/*.yml')]; print('✅ All tool configurations valid')"
+
+# Build-safe tests (no secrets required, runs during Docker build)
+test-build-safe: test-config
+    @echo "🔒 Running build-safe tests (no secrets required)..."
+    @echo "✅ Build validation passed"
 
 # Prepare data for Docker build (replaces prepare-data-for-build.sh)
 prepare-build: download build-models
