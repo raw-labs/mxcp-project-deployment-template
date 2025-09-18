@@ -1,6 +1,6 @@
 # MXCP Project Deployment Template
 
-> 🚀 **Stop wasting days on deployment setup. This battle-tested template gives any MXCP project production-ready CI/CD in 5 minutes, with enterprise-grade security and monitoring built-in.**
+> 🚀 **Stop wasting days on deployment setup. This battle-tested template gives any MXCP project production-ready CI/CD in 5 minutes.**
 
 ## 🎯 Why This Template?
 
@@ -42,7 +42,7 @@ Using this template immediately gives you:
 - ✅ Automated deployment to AWS App Runner on every push
 - ✅ Secure secret management (no more hardcoded API keys)
 - ✅ 4-tiered testing (data → tools → API → LLM)
-- ✅ Health monitoring and audit logs
+- ✅ Basic health check endpoint for uptime monitoring
 - ✅ External team collaboration support (Squirro)
 
 ## 🚀 Quick Start
@@ -89,8 +89,8 @@ cp /path/to/template/ENVIRONMENT.md.template .
   - [Environment Variables](#environment-variables)
   - [Production Checklist](#production-checklist)
 - [Secret Management](#secret-management)
-- [Monitoring and Observability](#monitoring-and-observability)
-  - [Health Monitoring](#health-monitoring)
+- [Health Checks](#health-checks)
+  - [Basic Health Monitoring](#basic-health-monitoring)
   - [Audit Logs](#audit-logs)
   - [Metrics and Dashboards](#metrics-and-dashboards)
 - [Backup and Recovery](#backup-and-recovery)
@@ -273,10 +273,10 @@ The diagram above shows how the template's components work together:
 |---------|-------------|
 | **🔧 Standardized CI/CD** | Same deployment logic across all MXCP projects |
 | **🤝 Multi-team Support** | Works for RAW Labs, Squirro, and other external teams |
-| **✅ Production Proven** | Powers UAE MXCP Server with 3M+ records |
+| **✅ Production Ready** | Used by UAE MXCP Server (3M+ records) |
 | **🔄 Easy Updates** | Minimal merge conflicts, clear separation of concerns |
-| **🏃 Fast Deployment** | From zero to deployed in under 10 minutes |
-| **🔒 Security First** | Built-in secrets management and audit logging |
+| **🏃 Fast Deployment** | ~8-12 minutes from push to deployment |
+| **🔒 Security First** | Built-in secrets management, basic health checks |
 
 ## Template Components
 
@@ -915,7 +915,7 @@ This template enables standardized deployment of MXCP servers with proven patter
 
 - **Standardized CI/CD** with AWS App Runner or external systems
 - **Flexible data strategies** (static, downloaded, or API-based)
-- **Health check architecture** proven with 3M+ record deployments
+- **Basic health check endpoint** for uptime monitoring
 - **Clean separation** between stable infrastructure and customizable components
 
 ### For RAW Labs Teams
@@ -1026,34 +1026,23 @@ gh secret set OPENAI_API_KEY --body "sk-..."
 gh secret set AWS_ACCESS_KEY_ID --body "AKIA..."
 ```
 
-## Monitoring and Observability
+## Health Checks
 
-### Health Monitoring
+### Basic Health Monitoring
 - **Endpoint**: `GET /health` returns JSON status
 - **Frequency**: Configure based on your SLA (default: 30s)
 - **Timeout**: Keep low for fast failure detection (5s)
 
 ### Audit Logs
 
-MXCP generates structured audit logs in JSONL format:
+**Note**: The template provides basic logging to stdout/stderr which is captured by AWS App Runner. 
 
-```json
-{
-  "timestamp": "2024-01-15T10:30:00Z",
-  "session_id": "uuid",
-  "trace_id": "otel-trace-id", 
-  "operation_name": "tool_name",
-  "caller": "user_identifier",
-  "duration_ms": 145,
-  "status": "success"
-}
-```
+For production audit logging, you'll need to:
+1. Configure MXCP's audit logging features
+2. Set up log aggregation (CloudWatch, ELK, Splunk, etc.)
+3. Implement structured logging in your tools
 
-**Log Shipping Options:**
-- CloudWatch Logs (AWS native)
-- ELK Stack (Elasticsearch, Logstash, Kibana)
-- Splunk
-- Datadog
+This is not included in the template but can be added based on your requirements.
 - Grafana Loki
 
 **Log Rotation:**
