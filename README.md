@@ -403,6 +403,12 @@ rm -f ENVIRONMENT.md.template
 
 **7. Choose Your Data Strategy**
 
+**⚠️ Important**: Data preparation now happens OUTSIDE Docker build:
+- GitHub Actions downloads/prepares data before building the image
+- Keeps Docker images smaller and builds faster
+- No secrets in Docker build context
+- Data files are included in the image but not downloaded during build
+
 The template supports three data patterns:
 
 **Option A: Static Data (simplest)**
@@ -561,7 +567,11 @@ The justfile implements a comprehensive testing strategy with three levels:
 | **Level 2** | API Tests | External API integration (`python tests/test.py api`) | Free | After build | `just test-api` |
 | **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | After build | `just test-evals` |
 
-**Important**: Full testing (Levels 1-3) happens AFTER the Docker build, when secrets are available. This ensures we never bake secrets into the Docker image.
+**Important**: 
+- Data preparation happens BEFORE Docker build in the GitHub Actions workflow
+- Only config validation runs during Docker build
+- Full testing (Levels 1-3) happens AFTER the Docker build, when secrets are available
+- This ensures we never bake secrets or large data files into the Docker image
 
 ### Template Placeholders
 

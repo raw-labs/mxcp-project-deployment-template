@@ -37,28 +37,15 @@ RUN chown -R mxcp:mxcp /app /home/mxcp
 # Switch to non-root user for security
 USER mxcp
 
-# PROJECT-SPECIFIC: UAE Business License Data Preparation
-# Squirro can modify this section for their data sources
-ARG MXCP_DATA_ACCESS_KEY_ID
-ARG MXCP_DATA_SECRET_ACCESS_KEY
-ENV AWS_ACCESS_KEY_ID=$MXCP_DATA_ACCESS_KEY_ID
-ENV AWS_SECRET_ACCESS_KEY=$MXCP_DATA_SECRET_ACCESS_KEY
-
-# Prepare project data using justfile (supports different data strategies)
-RUN mkdir -p ./data ./logs
-# Use justfile for flexible data preparation - supports S3, API, or static data
-RUN just prepare-build
+# Create required directories
+RUN mkdir -p ./data ./logs .env/bin
 
 # Create symlink for mxcp that tests expect
-RUN mkdir -p .env/bin && ln -s /usr/local/bin/mxcp .env/bin/mxcp
+RUN ln -s /usr/local/bin/mxcp .env/bin/mxcp
 
 # Run only build-safe tests during build (no API keys required)
 # Full testing happens after build with runtime secrets
 RUN just test-config || (echo "❌ Config validation failed during Docker build" && exit 1)
-
-# Clear data access credentials after use (security)
-ENV AWS_ACCESS_KEY_ID=""
-ENV AWS_SECRET_ACCESS_KEY=""
 
 # Ensure directories have correct permissions
 RUN chmod -R 755 ./data ./logs

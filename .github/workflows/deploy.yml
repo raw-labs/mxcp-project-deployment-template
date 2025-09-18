@@ -186,6 +186,32 @@ jobs:
         echo "MEMORY_SIZE=\"${{ env.MEMORY_SIZE }}\"" >> .github/config.env
     
     
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install just
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+        echo "/usr/local/bin" >> $GITHUB_PATH
+    
+    - name: Install dependencies
+      run: |
+        pip install -r deployment/requirements.txt
+    
+    - name: Prepare data before build
+      run: |
+        echo "📥 Preparing data outside Docker..."
+        # Export credentials for data download
+        export AWS_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }}
+        export AWS_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}
+        
+        # Download and prepare data
+        just prepare-build
+        
+        echo "✅ Data prepared successfully"
+    
     - name: Build and push Docker image
       run: |
         # Login to ECR
@@ -196,10 +222,8 @@ jobs:
         aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
         aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true
         
-        # Build from project root with deployment/Dockerfile and data credentials
+        # Build from project root with deployment/Dockerfile (no data credentials needed)
         docker build -f deployment/Dockerfile \
-          --build-arg MXCP_DATA_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }} \
-          --build-arg MXCP_DATA_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }} \
           -t ${{ env.ECR_REPOSITORY }}:${{ github.sha }} .
         
         # Tag for ECR
