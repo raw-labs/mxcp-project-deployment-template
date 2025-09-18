@@ -43,7 +43,6 @@ Using this template immediately gives you:
 - ✅ Secure secret management (no more hardcoded API keys)
 - ✅ 4-tiered testing (data → tools → API → LLM)
 - ✅ Health monitoring and audit logs
-- ✅ Rollback capability with git tags
 - ✅ External team collaboration support (Squirro)
 
 ## 🚀 Quick Start
