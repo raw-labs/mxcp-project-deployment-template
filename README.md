@@ -668,8 +668,8 @@ The justfile implements a comprehensive testing strategy with four levels:
 | **Build** | Config Validation | YAML syntax, basic setup | Free | During Docker build | `just test-config` |
 | **Level 1** | Data Quality | dbt schema tests, referential integrity | Free | After build | `just test-data` |
 | **Level 2** | Tool Tests | MXCP tools functionality (`python tests/test.py tool`) | Free | After build | `just test-tools` |
-| **Level 2** | API Tests | External API integration (`python tests/test.py api`) | Free | After build | `just test-api` |
-| **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | After build | `just test-evals` |
+| **Level 3** | API Tests | External API integration (`python tests/test.py api`) | Free | After build | `just test-api` |
+| **Level 4** | LLM Evaluation | End-to-end AI behavior validation | $$$ | After build | `just test-evals` |
 
 **Important**: 
 - Data download happens BEFORE Docker build in the GitHub Actions workflow (using `just prepare-data`)
