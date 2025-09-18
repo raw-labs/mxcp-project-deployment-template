@@ -51,9 +51,13 @@ test-build-safe: test-config
     @echo "🔒 Running build-safe tests (no secrets required)..."
     @echo "✅ Build validation passed"
 
-# Prepare data for Docker build (replaces prepare-data-for-build.sh)
+# Prepare data for Docker build (download + build inside Docker)
 prepare-build: download build-models
     @echo "✅ Data prepared for Docker build"
+
+# Just download data (for GitHub Actions - no dbt needed)
+prepare-data: download
+    @echo "✅ Data downloaded successfully"
 
 # Complete development pipeline (replaces run_etl_and_tests.sh)
 full-pipeline: download build-models test-data test-tools

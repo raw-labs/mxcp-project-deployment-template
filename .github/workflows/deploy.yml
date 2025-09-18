@@ -213,27 +213,9 @@ jobs:
         export AWS_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }}
         export AWS_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}
         
-        # Set dbt profiles directory
-        export DBT_PROFILES_DIR=${{ github.workspace }}
-        
-        # Copy profiles-docker.yml to profiles.yml for dbt to find it
-        cp deployment/profiles-docker.yml profiles.yml
-        
-        # Debug dbt setup
-        echo "🔍 Debug: Checking dbt configuration..."
-        echo "DBT_PROFILES_DIR = $DBT_PROFILES_DIR"
-        if [ -f "profiles.yml" ]; then
-          echo "✅ profiles.yml exists:"
-          head -n 5 profiles.yml
-        fi
-        if [ -f "dbt_project.yml" ]; then
-          echo "📄 dbt_project.yml profile:"
-          grep "^profile:" dbt_project.yml || echo "No profile line found"
-        fi
-        
-        # Download and prepare data
+        # Download data only (no dbt needed here)
         # This will be a no-op for API projects (just creates directories)
-        just prepare-build
+        just prepare-data
         
         echo "✅ Data preparation complete"
     

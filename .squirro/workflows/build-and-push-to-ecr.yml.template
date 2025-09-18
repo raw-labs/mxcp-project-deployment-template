@@ -188,15 +188,9 @@ jobs:
         export AWS_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }}
         export AWS_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}
         
-        # Set dbt profiles directory
-        export DBT_PROFILES_DIR=${{ github.workspace }}
-        
-        # Copy profiles-docker.yml to profiles.yml for dbt to find it
-        cp deployment/profiles-docker.yml profiles.yml
-        
-        # Download and prepare data
+        # Download data only (no dbt needed here)
         # This will be a no-op for API projects (just creates directories)
-        just prepare-build
+        just prepare-data
         
         echo "✅ Data preparation complete"
     
