@@ -447,15 +447,17 @@ Each project must customize `.github/workflows/deploy.yml` to include its specif
 
 1. Open `.github/workflows/deploy.yml`
 2. Find the `env:` block at the top (after the `on:` section)
-3. Add your project's secrets:
+3. **UNCOMMENT** and customize the secrets your project needs:
    ```yaml
    env:
-     # Your project's secrets
-     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || '' }}
-     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
-     CUSTOM_API_TOKEN: ${{ secrets.CUSTOM_API_TOKEN || '' }}
+     # Example secrets (uncomment and modify for your project):
+     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || '' }}  # ← UNCOMMENT THIS!
+     # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || '' }}
+     # CUSTOM_API_TOKEN: ${{ secrets.CUSTOM_API_TOKEN || '' }}
    ```
 4. Commit these changes - they're part of your project configuration
+
+⚠️ **IMPORTANT**: The secrets are commented out by default. You MUST uncomment the ones you need!
 
 **Why this approach?**
 - Simple and explicit - you see exactly what secrets your project uses

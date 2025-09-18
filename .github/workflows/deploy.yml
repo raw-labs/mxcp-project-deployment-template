@@ -243,11 +243,22 @@ jobs:
     - name: Test Docker image with secrets
       run: |
         echo "🧪 Running full test suite with secrets..."
-        # Docker automatically inherits env vars from the workflow env block
+        # Create env file with all current environment variables that might be needed
+        cat > test.env << EOF
+        OPENAI_API_KEY=$OPENAI_API_KEY
+        ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+        VERTEC_API_KEY=$VERTEC_API_KEY
+        EOF
+        
+        # Run tests with both config.env and test.env
         docker run --rm \
           --env-file deployment/config.env \
+          --env-file test.env \
           ${{ env.ECR_REPOSITORY }}:${{ github.sha }} \
           just test-all
+        
+        # Clean up
+        rm -f test.env
         echo "✅ All tests passed!"
     
     - name: Push to ECR
