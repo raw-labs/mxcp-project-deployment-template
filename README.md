@@ -89,11 +89,7 @@ cp /path/to/template/ENVIRONMENT.md.template .
   - [Environment Variables](#environment-variables)
   - [Production Checklist](#production-checklist)
 - [Secret Management](#secret-management)
-- [Health Checks](#health-checks)
-  - [Basic Health Monitoring](#basic-health-monitoring)
-  - [Audit Logs](#audit-logs)
-  - [Metrics and Dashboards](#metrics-and-dashboards)
-- [Backup and Recovery](#backup-and-recovery)
+- [What's Included vs What's Not](#whats-included-vs-whats-not)
 - [Support](#support)
 
 ## Architecture Overview
@@ -1026,65 +1022,23 @@ gh secret set OPENAI_API_KEY --body "sk-..."
 gh secret set AWS_ACCESS_KEY_ID --body "AKIA..."
 ```
 
-## Health Checks
+## What's Included vs What's Not
 
-### Basic Health Monitoring
-- **Endpoint**: `GET /health` returns JSON status
-- **Frequency**: Configure based on your SLA (default: 30s)
-- **Timeout**: Keep low for fast failure detection (5s)
+### ✅ What This Template Provides
 
-### Audit Logs
+- **Health Check**: Basic `/health` endpoint for App Runner monitoring
+- **Logging**: stdout/stderr captured by AWS App Runner (viewable in CloudWatch)
+- **Configuration**: Secure management of API keys and settings
+- **Testing**: 4-tier testing framework (data → tools → API → LLM)
+- **CI/CD**: Automated deployment pipeline
 
-**Note**: The template provides basic logging to stdout/stderr which is captured by AWS App Runner. 
+### ❌ What You Need to Add
 
-For production audit logging, you'll need to:
-1. Configure MXCP's audit logging features
-2. Set up log aggregation (CloudWatch, ELK, Splunk, etc.)
-3. Implement structured logging in your tools
-
-This is not included in the template but can be added based on your requirements.
-- Grafana Loki
-
-**Log Rotation:**
-```bash
-# /etc/logrotate.d/mxcp
-/app/logs/*.jsonl {
-    daily
-    rotate 30
-    compress
-    notifempty
-}
-```
-
-### Metrics and Dashboards
-
-Key metrics to monitor:
-- Request latency (p50, p90, p99)
-- Error rate by tool
-- Token usage (for LLM tools)
-- Memory/CPU utilization
-- Active sessions
-
-## Backup and Recovery
-
-MXCP is mostly stateless, but consider backing up:
-
-1. **Audit Logs** - Historical usage data
-2. **Configuration** - Your customized YAML files (in Git)
-3. **Data** - If using local data files
-
-Recovery is straightforward:
-```bash
-# Restore from Git
-git clone your-repo
-./setup-project.sh --name your-project --type remote_data
-
-# Restore secrets from vault
-vault kv get secret/mxcp/your-project
-
-# Deploy
-git push origin main
-```
+- **Audit Logging**: MXCP supports structured audit logs, but you need to configure them
+- **Metrics/Monitoring**: Beyond basic health checks, you'll need CloudWatch, Datadog, etc.
+- **Backup/Recovery**: Your data and configuration backup strategy
+- **Scaling**: Auto-scaling policies for App Runner
+- **Alerting**: PagerDuty, Slack notifications, etc.
 
 ## Support
 
