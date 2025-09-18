@@ -85,6 +85,11 @@ jobs:
         curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
     
+    - name: Install dependencies
+      run: |
+        # Install deployment requirements for validation
+        pip install -r deployment/requirements.txt
+    
     - name: Run configuration validation
       run: |
         just validate-config
@@ -107,6 +112,12 @@ jobs:
           set +a
           echo "✅ Loaded defaults from deployment/config.env"
         fi
+        
+        # Debug: Show what GitHub provides
+        echo "🔍 Debug - GitHub Variables:"
+        echo "   vars.AWS_REGION = '${{ vars.AWS_REGION }}'"
+        echo "   vars.AWS_ACCOUNT_ID = '${{ vars.AWS_ACCOUNT_ID }}'"
+        echo "   vars.ECR_REPOSITORY = '${{ vars.ECR_REPOSITORY }}'"
         
         # Then, override with GitHub Variables if set
         if [ -n "${{ vars.AWS_REGION }}" ]; then
@@ -208,8 +219,8 @@ jobs:
     - name: Test Docker image with secrets
       run: |
         echo "🧪 Running full test suite with secrets..."
-        # Pass ALL environment variables to Docker (including those from env: block)
-        env > test.env
+        # Pass environment variables to Docker, but exclude HOME which conflicts with container's HOME
+        env | grep -v '^HOME=' > test.env
         
         # Run tests with environment variables
         docker run --rm \

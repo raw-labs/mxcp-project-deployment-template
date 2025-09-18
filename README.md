@@ -10,13 +10,18 @@ This template enables consistent deployment of MXCP servers across RAW Labs and 
 # For new projects
 cp -r mxcp-project-deployment-template/ my-new-project/
 cd my-new-project
-./setup-project.sh my-project-name
+./setup-project.sh --name my-project --type remote_data
 
 # For existing projects
 cd existing-project
 cp -r /path/to/template/.github .
 cp -r /path/to/template/deployment .
-./setup-project.sh my-project-name
+cp /path/to/template/justfile.template .
+cp /path/to/template/setup-project.sh .
+cp /path/to/template/ENVIRONMENT.md.template .
+./setup-project.sh --name my-project --type remote_data
+
+# Don't forget to customize .github/workflows/deploy.yml with your secrets!
 ```
 
 ## Table of Contents
@@ -66,7 +71,8 @@ graph TB
         CiTests["just ci-tests-with-data<br/>🔍 CI tests + data"]
         FullPipeline["just full-pipeline<br/>🏗️ Complete dev pipeline"]
         TestTools["just test-tools<br/>🔧 Tool tests"]
-        PrepareBuild["just prepare-build<br/>📦 Data preparation"]
+        PrepareData["just prepare-data<br/>📥 Data download"]
+        PrepareBuild["just prepare-build<br/>📦 Full preparation"]
         TestData["just test-data<br/>🧪 Level 1: dbt tests"]
         TestEvals["just test-evals<br/>🤖 Level 3: LLM evals"]
     end
@@ -155,7 +161,7 @@ The diagram above shows how the template's components work together:
 **🎯 Key Integration Points:**
 - **Workflows → Justfile**: All CI/CD uses justfile tasks (no manual commands)
 - **Justfile → Project**: Tasks operate on your scripts, models, and tools
-- **Docker → Justfile**: Container build uses `just prepare-build` for data prep
+- **Docker → Justfile**: Container build expects data to be ready (uses `just test-config`)
 - **Config → All**: Template files provide consistent configuration patterns
 
 **💡 Benefits:**
@@ -279,9 +285,10 @@ cd your-new-project
 ./setup-project.sh --name uae-licenses --region us-west-2 --type remote_data
 ./setup-project.sh --name vertec-poc --type api
 
-# Legacy format (still supported):
-./setup-project.sh finance-demo
-./setup-project.sh uae-licenses us-west-2
+# Options:
+# --name: Project name (required)
+# --type: Project type - data, remote_data, or api (default: remote_data)
+# --region: AWS region (default: eu-west-1)
 
 # ℹ️ dbt Integration: The script automatically updates dbt_project.yml 
 # to use profile '{{PROJECT_NAME}}-mxcp' matching the generated profiles.yml
@@ -504,7 +511,7 @@ cp /path/to/template/justfile.template .
 cp /path/to/template/setup-project.sh .
 
 # Run setup
-./setup-project.sh your-project-name
+./setup-project.sh --name your-project-name --type remote_data
 
 # Configure and deploy
 git add .
@@ -525,7 +532,7 @@ cp /path/to/template/.github/workflows/deploy.yml .github/workflows/
 cp /path/to/template/deployment/Dockerfile deployment/
 
 # Or run full setup for complete standardization
-./setup-project.sh your-project-name
+./setup-project.sh --name your-project-name --type remote_data
 ```
 
 #### Scenario 3: External Teams (Squirro)
@@ -570,10 +577,11 @@ The justfile implements a comprehensive testing strategy with three levels:
 | **Level 3** | LLM Evaluation | End-to-end AI behavior validation | $$$ | After build | `just test-evals` |
 
 **Important**: 
-- Data preparation happens BEFORE Docker build in the GitHub Actions workflow
-- Only config validation runs during Docker build
+- Data download happens BEFORE Docker build in the GitHub Actions workflow (using `just prepare-data`)
+- Docker build runs `just build-models` to build dbt models with the downloaded data
+- Docker build runs `just test-config` for basic validation
 - Full testing (Levels 1-3) happens AFTER the Docker build, when secrets are available
-- This ensures we never bake secrets or large data files into the Docker image
+- This ensures we never bake secrets into the Docker image
 
 ### Template Placeholders
 
@@ -695,7 +703,8 @@ After customization, your justfile will provide these tasks:
 #### **Data Pipeline Tasks**
 - `just download` - Download/prepare your project data
 - `just build-models` - Run dbt transformations  
-- `just prepare-build` - Complete data preparation for Docker
+- `just prepare-data` - Download data only (used in GitHub Actions)
+- `just prepare-build` - Download data + build models (used inside Docker)
 
 #### **Testing Tasks (3-Tier)**
 - `just test-config` - Validate YAML configurations (instant)
@@ -820,7 +829,7 @@ This template enables standardized deployment of MXCP servers with proven patter
 ```bash
 cp -r mxcp-project-deployment-template/ new-project/
 cd new-project
-./setup-project.sh project-name
+./setup-project.sh --name project-name --type remote_data
 ```
 
 2. **Implement project logic:**
@@ -969,7 +978,7 @@ Recovery is straightforward:
 ```bash
 # Restore from Git
 git clone your-repo
-./setup-project.sh your-project
+./setup-project.sh --name your-project --type remote_data
 
 # Restore secrets from vault
 vault kv get secret/mxcp/your-project

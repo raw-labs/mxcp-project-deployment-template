@@ -299,6 +299,26 @@ if safe_copy "ENVIRONMENT.md.template" "ENVIRONMENT.md" "environment documentati
     print_success "Created ENVIRONMENT.md with project-specific variables"
 fi
 
+# Process .squirro templates
+if [ -d ".squirro" ]; then
+    print_step "Processing .squirro templates..."
+    
+    # Process setup-for-squirro.sh.template
+    if [ -f ".squirro/setup-for-squirro.sh.template" ]; then
+        safe_copy ".squirro/setup-for-squirro.sh.template" ".squirro/setup-for-squirro.sh"
+        sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .squirro/setup-for-squirro.sh
+        chmod +x .squirro/setup-for-squirro.sh
+        print_success "Created .squirro/setup-for-squirro.sh"
+    fi
+    
+    # Process workflow template
+    if [ -f ".squirro/workflows/build-and-push-to-ecr.yml.template" ]; then
+        safe_copy ".squirro/workflows/build-and-push-to-ecr.yml.template" ".squirro/workflows/build-and-push-to-ecr.yml"
+        sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" .squirro/workflows/build-and-push-to-ecr.yml
+        print_success "Created .squirro/workflows/build-and-push-to-ecr.yml"
+    fi
+fi
+
 # Step 6: Handle .gitignore
 print_step "Step 6: Updating .gitignore..."
 
@@ -436,6 +456,8 @@ template_files=(
     "deployment/profiles-docker.yml.template"
     "deployment/mxcp-user-config.yml.template"
     "ENVIRONMENT.md.template"
+    ".squirro/setup-for-squirro.sh.template"
+    ".squirro/workflows/build-and-push-to-ecr.yml.template"
 )
 
 for template in "${template_files[@]}"; do

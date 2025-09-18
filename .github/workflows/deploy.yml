@@ -225,9 +225,21 @@ jobs:
         aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
         docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
         
-        # Create ECR repository if it doesn't exist
-        aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
-        aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true
+        # Check if ECR repository exists (create only if we have permissions)
+        if aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} 2>/dev/null; then
+          echo "✅ ECR repository ${{ env.ECR_REPOSITORY }} exists"
+        else
+          echo "⚠️ ECR repository ${{ env.ECR_REPOSITORY }} doesn't exist"
+          # Try to create it, but don't fail if we lack permissions (external teams use shared repos)
+          if aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} --image-scanning-configuration scanOnPush=true 2>/dev/null; then
+            echo "✅ Created ECR repository ${{ env.ECR_REPOSITORY }}"
+          else
+            echo "⚠️ Cannot create repository (insufficient permissions). Assuming it's a shared repository that should already exist."
+            # Verify the repository actually exists by trying to describe it again
+            aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} --region ${{ env.AWS_REGION }} || \
+              (echo "❌ ERROR: ECR repository ${{ env.ECR_REPOSITORY }} does not exist and cannot be created. Please contact your AWS administrator." && exit 1)
+          fi
+        fi
         
         # Build from project root with deployment/Dockerfile (no data credentials needed)
         docker build -f deployment/Dockerfile \
@@ -240,8 +252,8 @@ jobs:
     - name: Test Docker image with secrets
       run: |
         echo "🧪 Running full test suite with secrets..."
-        # Pass ALL environment variables to Docker (including those from env: block)
-        env > test.env
+        # Pass environment variables to Docker, but exclude HOME which conflicts with container's HOME
+        env | grep -v '^HOME=' > test.env
         
         # Run tests with environment variables
         docker run --rm \

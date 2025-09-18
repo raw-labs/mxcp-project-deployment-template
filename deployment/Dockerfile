@@ -43,6 +43,9 @@ RUN mkdir -p ./data ./logs .env/bin
 # Create symlink for mxcp that tests expect
 RUN ln -s /usr/local/bin/mxcp .env/bin/mxcp
 
+# Build dbt models with the data that was downloaded outside Docker
+RUN just build-models || (echo "❌ dbt model build failed" && exit 1)
+
 # Run only build-safe tests during build (no API keys required)
 # Full testing happens after build with runtime secrets
 RUN just test-config || (echo "❌ Config validation failed during Docker build" && exit 1)
