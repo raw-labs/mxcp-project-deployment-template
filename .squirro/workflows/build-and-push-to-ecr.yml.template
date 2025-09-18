@@ -188,6 +188,9 @@ jobs:
         export AWS_ACCESS_KEY_ID=${{ secrets.MXCP_DATA_ACCESS_KEY_ID }}
         export AWS_SECRET_ACCESS_KEY=${{ secrets.MXCP_DATA_SECRET_ACCESS_KEY }}
         
+        # Set dbt profiles directory
+        export DBT_PROFILES_DIR=${{ github.workspace }}/deployment
+        
         # Download and prepare data
         # This will be a no-op for API projects (just creates directories)
         just prepare-build
