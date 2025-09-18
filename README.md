@@ -889,7 +889,22 @@ Each project should document its specific requirements:
 
 ## Secret Management
 
-MXCP supports multiple secret management solutions:
+### How Secrets Work in This Template
+
+The template uses a secure approach where secrets are:
+1. **Never baked into Docker images** (security best practice)
+2. **Passed at runtime** via environment variables
+3. **Configured per-project** in the workflow's `env:` block
+4. **Injected into AWS App Runner** as RuntimeEnvironmentVariables
+
+When deploying to AWS App Runner, the `deploy-app-runner.sh` script:
+- Collects all API keys from the GitHub Actions environment
+- Passes them to App Runner as RuntimeEnvironmentVariables
+- These are then available to your MXCP server at runtime
+
+### Advanced Secret Management Options
+
+MXCP also supports enterprise secret management solutions:
 
 ### HashiCorp Vault
 ```bash

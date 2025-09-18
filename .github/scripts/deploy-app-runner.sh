@@ -47,6 +47,23 @@ echo "Region: $AWS_REGION"
 echo "ECR Image: $ECR_IMAGE_URI"
 echo "CPU: $CPU_SIZE"
 echo "Memory: $MEMORY_SIZE"
+
+# Build runtime environment variables JSON
+# Start with basic vars
+RUNTIME_ENV_JSON='{"PORT": "8000", "PYTHONUNBUFFERED": "1"'
+
+# Add any API keys that are set
+for var in OPENAI_API_KEY ANTHROPIC_API_KEY VERTEC_API_KEY MXCP_DATA_ACCESS_KEY_ID MXCP_DATA_SECRET_ACCESS_KEY; do
+    if [ -n "${!var}" ]; then
+        # Escape the value for JSON
+        ESCAPED_VALUE=$(echo "${!var}" | sed 's/"/\\"/g')
+        RUNTIME_ENV_JSON+=", \"$var\": \"$ESCAPED_VALUE\""
+    fi
+done
+
+RUNTIME_ENV_JSON+='}'
+
+echo "📋 Runtime environment configured ($(echo "$RUNTIME_ENV_JSON" | jq -r 'keys | length') variables)"
 echo ""
 
 # Step 1: Cleanup failed services (BEGINNING of deployment process)
@@ -88,8 +105,24 @@ if SERVICE_INFO=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" 2>
         exit 1
     fi
     
-    aws apprunner start-deployment --service-arn "$SERVICE_ARN"
-    echo "✅ Update deployment initiated"
+    # Update the service with new image and environment variables
+    aws apprunner update-service \
+        --service-arn "$SERVICE_ARN" \
+        --source-configuration '{
+            "ImageRepository": {
+                "ImageIdentifier": "'$ECR_IMAGE_URI'",
+                "ImageConfiguration": {
+                    "Port": "8000",
+                    "RuntimeEnvironmentVariables": '"$RUNTIME_ENV_JSON"'
+                },
+                "ImageRepositoryType": "ECR"
+            },
+            "AutoDeploymentsEnabled": false,
+            "AuthenticationConfiguration": {
+                "AccessRoleArn": "arn:aws:iam::'$AWS_ACCOUNT_ID':role/AppRunnerECRAccessRole"
+            }
+        }'
+    echo "✅ Update deployment initiated with new environment variables"
 else
     echo "🆕 Creating new App Runner service..."
     aws apprunner create-service \
@@ -99,10 +132,7 @@ else
                 "ImageIdentifier": "'$ECR_IMAGE_URI'",
                 "ImageConfiguration": {
                     "Port": "8000",
-                    "RuntimeEnvironmentVariables": {
-                        "PORT": "8000",
-                        "PYTHONUNBUFFERED": "1"
-                    }
+                    "RuntimeEnvironmentVariables": '"$RUNTIME_ENV_JSON"'
                 },
                 "ImageRepositoryType": "ECR"
             },
