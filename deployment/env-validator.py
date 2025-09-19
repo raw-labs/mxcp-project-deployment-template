@@ -53,9 +53,11 @@ class EnvValidator:
         with open(config_path, 'r') as f:
             content = f.read()
             
-        # Find all ${VAR_NAME} patterns
+        # Find all ${VAR_NAME} patterns but exclude template placeholders
         pattern = r'\$\{(\w+)\}'
-        return list(set(re.findall(pattern, content)))
+        all_vars = re.findall(pattern, content)
+        # Filter out template placeholders
+        return list(set([var for var in all_vars if not var.startswith('{{') and not var.endswith('}}') and var.isupper()]))
     
     def extract_config_env_vars(self, config_path):
         """Extract variables from config.env.template"""
@@ -76,8 +78,16 @@ class EnvValidator:
         docker_labels = self.extract_docker_labels('deployment/Dockerfile')
         deploy_vars = self.extract_deploy_script_vars('.github/scripts/deploy-app-runner.sh')
         workflow_env = self.extract_workflow_env('.github/workflows/deploy.yml')
-        mxcp_vars = self.extract_mxcp_config_vars('deployment/mxcp-user-config.yml.template')
-        config_env = self.extract_config_env_vars('deployment/config.env.template')
+        
+        # Use processed files if they exist, otherwise fall back to templates
+        mxcp_config_file = 'deployment/mxcp-user-config.yml' if Path('deployment/mxcp-user-config.yml').exists() else 'deployment/mxcp-user-config.yml.template'
+        config_env_file = 'deployment/config.env' if Path('deployment/config.env').exists() else 'deployment/config.env.template'
+        
+        if mxcp_config_file.endswith('.template'):
+            print("⚠️  Using template files - run setup-project.sh first for accurate validation")
+        
+        mxcp_vars = self.extract_mxcp_config_vars(mxcp_config_file)
+        config_env = self.extract_config_env_vars(config_env_file)
         
         # Validation 1: Runtime vars in Docker labels vs deploy-app-runner.sh
         print("1️⃣ Checking runtime variables (Docker labels vs deploy script)...")
