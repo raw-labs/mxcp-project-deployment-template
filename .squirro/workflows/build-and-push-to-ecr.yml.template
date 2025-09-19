@@ -93,6 +93,11 @@ jobs:
     - name: Run configuration validation
       run: |
         just validate-config
+    
+    - name: Validate environment consistency
+      run: |
+        echo "🔍 Checking environment variable consistency..."
+        python deployment/env-validator.py
 
   build-and-push:
     needs: [check-secrets, validate-config]

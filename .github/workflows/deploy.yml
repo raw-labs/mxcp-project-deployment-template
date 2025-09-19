@@ -104,6 +104,11 @@ jobs:
         echo "📝 Validating YAML configurations..."
         python -c "import yaml; yaml.safe_load(open('mxcp-site.yml')); print('✅ mxcp-site.yml is valid')"
         python -c "import yaml, glob; [yaml.safe_load(open(f)) for f in glob.glob('tools/*.yml')]; print('✅ All tool configurations valid')"
+    
+    - name: Validate environment consistency
+      run: |
+        echo "🔍 Checking environment variable consistency..."
+        python deployment/env-validator.py
         echo "✅ Pre-flight checks passed"
 
   deploy:

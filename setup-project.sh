@@ -13,7 +13,7 @@ set -e
 #                             Used in: config.env.template, justfile.template,
 #                                     mxcp-site-docker.yml.template, 
 #                                     profiles-docker.yml.template,
-#                                     ENVIRONMENT.md.template
+#                                     mxcp-user-config.yml.template
 #
 # {{AWS_REGION}}            - AWS region (e.g., "eu-west-1")
 #                             Used in: profiles-docker.yml.template
@@ -293,11 +293,8 @@ fi
 # Step 5: Create Environment Documentation
 print_step "Step 5: Creating environment documentation..."
 
-# Create main environment guide
-if safe_copy "ENVIRONMENT.md.template" "ENVIRONMENT.md" "environment documentation"; then
-    sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" ENVIRONMENT.md
-    print_success "Created ENVIRONMENT.md with project-specific variables"
-fi
+# Note: Environment documentation is now self-contained in Docker labels
+# Run: docker inspect <image> | grep 'env\.' to see all requirements
 
 # Process .squirro templates
 if [ -d ".squirro" ]; then
@@ -429,7 +426,7 @@ echo "1. Run: mxcp init --bootstrap"
 echo "2. ${YELLOW}Customize .github/workflows/deploy.yml with your project's secrets${NC}"
 echo "3. Choose your data strategy (see README)"
 echo "4. Review and commit the generated files to git"
-echo "5. Set GitHub repository secrets for deployment (see ENVIRONMENT.md)"
+echo "5. Set GitHub repository secrets (check .github/workflows/deploy.yml env: block)"
 echo "6. Push to trigger deployment: git push origin main"
 echo ""
 echo -e "${BLUE}Files created:${NC}"
@@ -438,7 +435,6 @@ echo "- justfile"
 echo "- deployment/mxcp-site-docker.yml"
 echo "- deployment/profiles-docker.yml"
 echo "- deployment/mxcp-user-config.yml"
-echo "- ENVIRONMENT.md"
 echo ""
 echo -e "${BLUE}Project: ${GREEN}$PROJECT_NAME${NC}"
 echo -e "${BLUE}Region:  ${GREEN}$AWS_REGION${NC}"
@@ -455,7 +451,6 @@ template_files=(
     "deployment/mxcp-site-docker.yml.template"
     "deployment/profiles-docker.yml.template"
     "deployment/mxcp-user-config.yml.template"
-    "ENVIRONMENT.md.template"
     ".squirro/setup-for-squirro.sh.template"
     ".squirro/workflows/build-and-push-to-ecr.yml.template"
 )

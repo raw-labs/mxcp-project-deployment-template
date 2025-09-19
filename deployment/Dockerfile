@@ -20,6 +20,17 @@ RUN groupadd -r mxcp && useradd -r -g mxcp -m -d /home/mxcp mxcp
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Document runtime environment variables (injected by App Runner)
+LABEL env.runtime.OPENAI_API_KEY='{"required": true, "type": "secret", "description": "OpenAI API key for LLM calls", "example": "sk-..."}'
+LABEL env.runtime.ANTHROPIC_API_KEY='{"required": false, "type": "secret", "description": "Anthropic API key for Claude models", "example": "sk-ant-..."}'
+LABEL env.runtime.VERTEC_API_KEY='{"required": false, "type": "secret", "description": "Vertec API key (API projects only)", "example": "vtc_..."}'
+
+# Document CI/CD environment variables (used during deployment only)
+LABEL env.cicd.AWS_ACCESS_KEY_ID='{"required": true, "type": "secret", "description": "AWS access key for deployment", "example": "AKIA..."}'
+LABEL env.cicd.AWS_SECRET_ACCESS_KEY='{"required": true, "type": "secret", "description": "AWS secret key for deployment", "example": "..."}'
+LABEL env.cicd.MXCP_DATA_ACCESS_KEY_ID='{"required": false, "type": "secret", "description": "AWS key for S3 data download", "example": "AKIA..."}'
+LABEL env.cicd.MXCP_DATA_SECRET_ACCESS_KEY='{"required": false, "type": "secret", "description": "AWS secret for S3 data download", "example": "..."}'
+
 # Copy the entire project
 COPY . .
 

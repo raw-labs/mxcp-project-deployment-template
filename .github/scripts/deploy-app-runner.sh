@@ -49,11 +49,11 @@ echo "CPU: $CPU_SIZE"
 echo "Memory: $MEMORY_SIZE"
 
 # Build runtime environment variables JSON
-# Start with basic vars
+# Only include variables meant for runtime, NOT CI/CD secrets
 RUNTIME_ENV_JSON='{"PORT": "8000", "PYTHONUNBUFFERED": "1"'
 
-# Add any API keys that are set
-for var in OPENAI_API_KEY ANTHROPIC_API_KEY VERTEC_API_KEY MXCP_DATA_ACCESS_KEY_ID MXCP_DATA_SECRET_ACCESS_KEY; do
+# Add only runtime API keys (exclude MXCP_DATA_* which are CI/CD only)
+for var in OPENAI_API_KEY ANTHROPIC_API_KEY VERTEC_API_KEY; do
     if [ -n "${!var}" ]; then
         # Escape the value for JSON
         ESCAPED_VALUE=$(echo "${!var}" | sed 's/"/\\"/g')

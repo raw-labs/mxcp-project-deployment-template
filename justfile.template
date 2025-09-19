@@ -52,7 +52,7 @@ test-build-safe: test-config
     @echo "✅ Build validation passed"
 
 # Prepare data for Docker build (download + build inside Docker)
-prepare-build: download build-models
+prepare-build: validate-env download build-models
     @echo "✅ Data prepared for Docker build"
 
 # Just download data (for GitHub Actions - no dbt needed)
@@ -64,7 +64,7 @@ full-pipeline: download build-models test-data test-tools
     @echo "🎉 Complete pipeline finished successfully!"
 
 # Complete testing suite (all 3 levels - requires OPENAI_API_KEY)
-test-all: test-data test-tools test-api test-evals
+test-all: validate-env test-data test-tools test-api test-evals
     @echo "🎉 All testing levels completed!"
     @echo "✅ Level 1: Data quality tests (dbt)"
     @echo "✅ Level 2: Tool tests (MXCP tools)"
@@ -74,6 +74,11 @@ test-all: test-data test-tools test-api test-evals
 # Quick configuration validation (no data download needed)
 validate-config: test-config
     @echo "✅ Configuration validation passed"
+
+# Validate environment variable consistency
+validate-env:
+    @echo "🔍 Validating environment variable consistency..."
+    @python deployment/env-validator.py || (echo "⚠️  Environment validation failed but continuing..."; true)
 
 # Full CI tests with data (for deploy workflow)
 ci-tests-with-data: test-config download build-models test-data

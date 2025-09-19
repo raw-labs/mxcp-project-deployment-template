@@ -1,6 +1,20 @@
 #!/bin/bash
 set -e
 
+# Runtime environment validation
+echo "🔍 Validating runtime environment..."
+
+# Check required runtime variables (based on Docker labels)
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo "❌ ERROR: Required environment variable OPENAI_API_KEY is not set"
+    echo "📋 This should be configured in App Runner's RuntimeEnvironmentVariables"
+    echo "📋 To see all runtime requirements:"
+    echo "   docker inspect <image> | grep 'env.runtime'"
+    exit 1
+fi
+
+echo "✅ Runtime validation passed"
+
 echo "Starting MXCP Server with health endpoint..."
 
 # Start MXCP server on port 8001 in the background

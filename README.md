@@ -1022,13 +1022,59 @@ gh secret set OPENAI_API_KEY --body "sk-..."
 gh secret set AWS_ACCESS_KEY_ID --body "AKIA..."
 ```
 
+## Environment Variables
+
+This project uses a self-documenting approach for environment variables through Docker labels.
+
+### Discovering Requirements
+
+```bash
+# List all runtime variables (passed to container)
+docker inspect your-image:latest | jq -r '
+  .[] | .Config.Labels | to_entries[] | 
+  select(.key | startswith("env.runtime")) | 
+  .key + " = " + .value'
+
+# List all CI/CD variables (used during deployment)
+docker inspect your-image:latest | jq -r '
+  .[] | .Config.Labels | to_entries[] | 
+  select(.key | startswith("env.cicd")) | 
+  .key + " = " + .value'
+
+# Parse the JSON metadata for a specific variable
+docker inspect your-image:latest | jq -r '
+  .[] | .Config.Labels."env.runtime.OPENAI_API_KEY" | fromjson'
+```
+
+### Setting Up Your Project
+
+1. **GitHub Secrets** (for CI/CD):
+   - `AWS_ACCESS_KEY_ID` (required)
+   - `AWS_SECRET_ACCESS_KEY` (required) 
+   - `MXCP_DATA_ACCESS_KEY_ID` (optional - for S3 data)
+   - `MXCP_DATA_SECRET_ACCESS_KEY` (optional - for S3 data)
+
+2. **Runtime Secrets** (automatically passed to App Runner):
+   - `OPENAI_API_KEY` (required)
+   - `ANTHROPIC_API_KEY` (optional)
+   - `VERTEC_API_KEY` (optional - API projects)
+
+3. **GitHub Variables** (non-sensitive config):
+   - `AWS_REGION`, `ECR_REPOSITORY`, etc. (see config.env.template)
+
+### Important Notes
+
+- CI/CD secrets (AWS_*) are NEVER passed to the running container
+- Runtime secrets are injected by App Runner, not baked into the image
+- Run `python deployment/env-validator.py` to check consistency
+
 ## What's Included vs What's Not
 
 ### ✅ What This Template Provides
 
 - **Health Check**: Basic `/health` endpoint for App Runner monitoring
-- **Logging**: stdout/stderr captured by AWS App Runner (viewable in CloudWatch)
-- **Configuration**: Secure management of API keys and settings
+- **Environment Validation**: Runtime checks and consistency validation
+- **Configuration**: Secure management via config.env + GitHub Secrets
 - **Testing**: 4-tier testing framework (data → tools → API → LLM)
 - **CI/CD**: Automated deployment pipeline
 
