@@ -1067,6 +1067,7 @@ docker inspect your-image:latest | jq -r '
 - CI/CD secrets (AWS_*) are NEVER passed to the running container
 - Runtime secrets are injected by App Runner, not baked into the image
 - Run `python deployment/env-validator.py` to check consistency
+- Runtime validation happens automatically in `deployment/start.sh`
 
 ## What's Included vs What's Not
 
