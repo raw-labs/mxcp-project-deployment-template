@@ -52,12 +52,29 @@ echo "Memory: $MEMORY_SIZE"
 # Only include variables meant for runtime, NOT CI/CD secrets
 RUNTIME_ENV_JSON='{"PORT": "8000", "PYTHONUNBUFFERED": "1"'
 
-# Add only runtime API keys (exclude MXCP_DATA_* which are CI/CD only)
-for var in OPENAI_API_KEY ANTHROPIC_API_KEY VERTEC_API_KEY; do
+# Extract runtime variables from Docker image labels
+echo "📋 Discovering runtime variables from Docker image labels..."
+RUNTIME_VARS=$(docker inspect "$ECR_IMAGE_URI" 2>/dev/null | jq -r '
+  .[0].Config.Labels | 
+  to_entries[] | 
+  select(.key | startswith("env.runtime.")) | 
+  select(.key | endswith(".json") | not) |
+  .key | sub("env.runtime."; "")
+' || echo "")
+
+if [ -z "$RUNTIME_VARS" ]; then
+    echo "⚠️  Could not extract runtime variables from image labels. Using defaults..."
+    # Fallback to reasonable defaults if image inspection fails
+    RUNTIME_VARS="OPENAI_API_KEY ANTHROPIC_API_KEY"
+fi
+
+# Add discovered runtime variables to JSON
+for var in $RUNTIME_VARS; do
     if [ -n "${!var}" ]; then
         # Escape the value for JSON
         ESCAPED_VALUE=$(echo "${!var}" | sed 's/"/\\"/g')
         RUNTIME_ENV_JSON+=", \"$var\": \"$ESCAPED_VALUE\""
+        echo "✅ Including runtime variable: $var"
     fi
 done
 
