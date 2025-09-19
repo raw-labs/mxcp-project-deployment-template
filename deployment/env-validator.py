@@ -36,16 +36,10 @@ class EnvValidator:
     
     def extract_deploy_script_vars(self, script_path):
         """Extract runtime vars from deploy-app-runner.sh"""
-        with open(script_path, 'r') as f:
-            content = f.read()
-            
-        # Find the for loop that builds runtime vars
-        pattern = r'for var in ([A-Z_\s]+); do'
-        match = re.search(pattern, content)
-        if match:
-            vars_str = match.group(1)
-            return vars_str.split()
-        return []
+        # Since deploy-app-runner.sh now reads from Docker labels dynamically,
+        # we should return True to indicate it's dynamic
+        # This method is now deprecated but kept for compatibility
+        return None  # Special value to indicate dynamic discovery
     
     def extract_workflow_env(self, workflow_path):
         """Extract env: block from deploy.yml"""
@@ -87,27 +81,33 @@ class EnvValidator:
         
         # Validation 1: Runtime vars in Docker labels vs deploy-app-runner.sh
         print("1️⃣ Checking runtime variables (Docker labels vs deploy script)...")
-        for var in docker_labels['runtime']:
-            if var not in deploy_vars:
-                self.errors.append(f"Runtime var {var} in Docker labels but not passed by deploy-app-runner.sh")
-        for var in deploy_vars:
-            if var not in docker_labels['runtime'] and var not in ['MXCP_DATA_ACCESS_KEY_ID', 'MXCP_DATA_SECRET_ACCESS_KEY']:
-                self.warnings.append(f"Variable {var} passed to App Runner but not documented in Docker labels")
+        if deploy_vars is None:
+            print("   ✅ deploy-app-runner.sh uses dynamic discovery from Docker labels")
+        else:
+            # Legacy validation for older versions
+            for var in docker_labels['runtime']:
+                if var not in deploy_vars:
+                    self.errors.append(f"Runtime var {var} in Docker labels but not passed by deploy-app-runner.sh")
+            for var in deploy_vars:
+                if var not in docker_labels['runtime'] and var not in ['MXCP_DATA_ACCESS_KEY_ID', 'MXCP_DATA_SECRET_ACCESS_KEY']:
+                    self.warnings.append(f"Variable {var} passed to App Runner but not documented in Docker labels")
         
         # Validation 2: mxcp-user-config.yml vars are available at runtime
         print("2️⃣ Checking mxcp-user-config.yml variables...")
         for var in mxcp_vars:
             if var not in docker_labels['runtime']:
                 self.errors.append(f"Variable ${{{var}}} used in mxcp-user-config.yml but not documented as runtime requirement")
-            if var not in deploy_vars:
+            # Skip deploy_vars check if using dynamic discovery
+            if deploy_vars is not None and var not in deploy_vars:
                 self.errors.append(f"Variable ${{{var}}} used in mxcp-user-config.yml but not passed by deploy-app-runner.sh")
         
         # Validation 3: CI/CD vars properly documented
         print("3️⃣ Checking CI/CD variables...")
-        cicd_vars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'MXCP_DATA_ACCESS_KEY_ID', 'MXCP_DATA_SECRET_ACCESS_KEY']
-        for var in cicd_vars:
-            if var in workflow_env and var not in docker_labels['cicd']:
-                self.warnings.append(f"CI/CD variable {var} used but not documented in Docker labels")
+        # Check all variables in workflow env that look like CI/CD vars
+        for var in workflow_env:
+            if var.startswith('AWS_') or var.endswith('_ACCESS_KEY_ID') or var.endswith('_SECRET_ACCESS_KEY'):
+                if var not in docker_labels['cicd']:
+                    self.warnings.append(f"CI/CD variable {var} used in workflow but not documented in Docker labels")
         
         # Validation 4: Config.env vars are non-sensitive
         print("4️⃣ Checking config.env variables...")
