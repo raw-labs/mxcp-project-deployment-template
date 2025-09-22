@@ -146,21 +146,21 @@ else
         --service-name $SERVICE_NAME \
         --source-configuration '{
             "ImageRepository": {
-                "ImageIdentifier": "'$ECR_IMAGE_URI'",
-                "ImageConfiguration": {
-                    "Port": "8000",
-                    "RuntimeEnvironmentVariables": '"$RUNTIME_ENV_JSON"'
-                },
-                "ImageRepositoryType": "ECR"
+            "ImageIdentifier": "'"$ECR_IMAGE_URI"'",
+            "ImageConfiguration": {
+                "Port": "8000",
+                "RuntimeEnvironmentVariables": '"$RUNTIME_ENV_JSON"'
+            },
+            "ImageRepositoryType": "ECR"
             },
             "AutoDeploymentsEnabled": false,
             "AuthenticationConfiguration": {
-                "AccessRoleArn": "arn:aws:iam::'$AWS_ACCOUNT_ID':role/AppRunnerECRAccessRole"
+            "AccessRoleArn": "arn:aws:iam::'"$AWS_ACCOUNT_ID"':role/AppRunnerECRAccessRole"
             }
         }' \
         --instance-configuration '{
-            "Cpu": "'$CPU_SIZE'",
-            "Memory": "'$MEMORY_SIZE'"
+            "Cpu": "'"$CPU_SIZE"'",
+            "Memory": "'"$MEMORY_SIZE"'"
         }' \
         --health-check-configuration '{
             "Protocol": "HTTP",
@@ -170,7 +170,7 @@ else
             "HealthyThreshold": 1,
             "UnhealthyThreshold": 3
         }' \
-        --region $AWS_REGION
+        --region "$AWS_REGION"
 fi
 
 echo "✅ Deployment initiated!"
