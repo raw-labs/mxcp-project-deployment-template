@@ -1,8 +1,21 @@
 #!/bin/bash
 set -e
 
-# 🚀 Simplified AWS App Runner Deployment Script
+# 🚀 AWS App Runner Deployment Script with Robust JSON Handling
 # Assumes Docker image is already built and pushed to ECR by GitHub Actions
+#
+# Key improvements:
+# - Uses jq for safe JSON construction (no string escaping issues)
+# - Handles special characters and spaces in variables correctly
+# - More maintainable and readable JSON configuration
+# - Eliminates common deployment failures due to malformed JSON
+
+# Check for required dependencies
+if ! command -v jq &> /dev/null; then
+    echo "❌ Error: jq is required but not installed"
+    echo "   Install jq: apt-get install jq (Ubuntu/Debian) or brew install jq (macOS)"
+    exit 1
+fi
 
 # Load configuration from either location (GitHub Actions or local)
 if [ -f ".github/config.env" ]; then
@@ -48,11 +61,7 @@ echo "ECR Image: $ECR_IMAGE_URI"
 echo "CPU: $CPU_SIZE"
 echo "Memory: $MEMORY_SIZE"
 
-# Build runtime environment variables JSON
-# Only include variables meant for runtime, NOT CI/CD secrets
-RUNTIME_ENV_JSON='{"PORT": "8000", "PYTHONUNBUFFERED": "1"'
-
-# Extract runtime variables from Docker image labels
+# Build runtime environment variables JSON using jq (safe approach)
 echo "📋 Discovering runtime variables from Docker image labels..."
 RUNTIME_VARS=$(docker inspect "$ECR_IMAGE_URI" 2>/dev/null | jq -r '
   .[0].Config.Labels | 
@@ -68,17 +77,25 @@ if [ -z "$RUNTIME_VARS" ]; then
     RUNTIME_VARS="OPENAI_API_KEY ANTHROPIC_API_KEY"
 fi
 
-# Add discovered runtime variables to JSON
+# Build runtime environment JSON safely using jq
+RUNTIME_ENV_JSON=$(jq -n \
+  --arg port "8000" \
+  --arg unbuffered "1" \
+  '{
+    "PORT": $port,
+    "PYTHONUNBUFFERED": $unbuffered
+  }')
+
+# Add discovered runtime variables safely
 for var in $RUNTIME_VARS; do
     if [ -n "${!var}" ]; then
-        # Escape the value for JSON
-        ESCAPED_VALUE=$(echo "${!var}" | sed 's/"/\\"/g')
-        RUNTIME_ENV_JSON+=", \"$var\": \"$ESCAPED_VALUE\""
+        RUNTIME_ENV_JSON=$(echo "$RUNTIME_ENV_JSON" | jq \
+          --arg key "$var" \
+          --arg value "${!var}" \
+          '. + {($key): $value}')
         echo "✅ Including runtime variable: $var"
     fi
 done
-
-RUNTIME_ENV_JSON+='}'
 
 echo "📋 Runtime environment configured ($(echo "$RUNTIME_ENV_JSON" | jq -r 'keys | length') variables)"
 echo ""
@@ -125,51 +142,63 @@ if SERVICE_INFO=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" 2>
     # Update the service with new image and environment variables
     aws apprunner update-service \
         --service-arn "$SERVICE_ARN" \
-        --source-configuration '{
-            "ImageRepository": {
-                "ImageIdentifier": "'$ECR_IMAGE_URI'",
-                "ImageConfiguration": {
-                    "Port": "8000",
-                    "RuntimeEnvironmentVariables": '"$RUNTIME_ENV_JSON"'
+        --source-configuration "$(jq -n \
+            --arg image "$ECR_IMAGE_URI" \
+            --arg account "$AWS_ACCOUNT_ID" \
+            --argjson env_vars "$RUNTIME_ENV_JSON" \
+            '{
+                "ImageRepository": {
+                    "ImageIdentifier": $image,
+                    "ImageConfiguration": {
+                        "Port": "8000",
+                        "RuntimeEnvironmentVariables": $env_vars
+                    },
+                    "ImageRepositoryType": "ECR"
                 },
-                "ImageRepositoryType": "ECR"
-            },
-            "AutoDeploymentsEnabled": false,
-            "AuthenticationConfiguration": {
-                "AccessRoleArn": "arn:aws:iam::'$AWS_ACCOUNT_ID':role/AppRunnerECRAccessRole"
-            }
-        }'
+                "AutoDeploymentsEnabled": false,
+                "AuthenticationConfiguration": {
+                    "AccessRoleArn": ("arn:aws:iam::" + $account + ":role/AppRunnerECRAccessRole")
+                }
+            }')"
     echo "✅ Update deployment initiated with new environment variables"
 else
     echo "🆕 Creating new App Runner service..."
     aws apprunner create-service \
-        --service-name $SERVICE_NAME \
-        --source-configuration '{
-            "ImageRepository": {
-            "ImageIdentifier": "'"$ECR_IMAGE_URI"'",
-            "ImageConfiguration": {
-                "Port": "8000",
-                "RuntimeEnvironmentVariables": '"$RUNTIME_ENV_JSON"'
-            },
-            "ImageRepositoryType": "ECR"
-            },
-            "AutoDeploymentsEnabled": false,
-            "AuthenticationConfiguration": {
-            "AccessRoleArn": "arn:aws:iam::'"$AWS_ACCOUNT_ID"':role/AppRunnerECRAccessRole"
-            }
-        }' \
-        --instance-configuration '{
-            "Cpu": "'"$CPU_SIZE"'",
-            "Memory": "'"$MEMORY_SIZE"'"
-        }' \
-        --health-check-configuration '{
-            "Protocol": "HTTP",
-            "Path": "/health",
-            "Interval": 20,
-            "Timeout": 5,
-            "HealthyThreshold": 1,
-            "UnhealthyThreshold": 3
-        }' \
+        --service-name "$SERVICE_NAME" \
+        --source-configuration "$(jq -n \
+            --arg image "$ECR_IMAGE_URI" \
+            --arg account "$AWS_ACCOUNT_ID" \
+            --argjson env_vars "$RUNTIME_ENV_JSON" \
+            '{
+                "ImageRepository": {
+                    "ImageIdentifier": $image,
+                    "ImageConfiguration": {
+                        "Port": "8000",
+                        "RuntimeEnvironmentVariables": $env_vars
+                    },
+                    "ImageRepositoryType": "ECR"
+                },
+                "AutoDeploymentsEnabled": false,
+                "AuthenticationConfiguration": {
+                    "AccessRoleArn": ("arn:aws:iam::" + $account + ":role/AppRunnerECRAccessRole")
+                }
+            }')" \
+        --instance-configuration "$(jq -n \
+            --arg cpu "$CPU_SIZE" \
+            --arg memory "$MEMORY_SIZE" \
+            '{
+                "Cpu": $cpu,
+                "Memory": $memory
+            }')" \
+        --health-check-configuration "$(jq -n \
+            '{
+                "Protocol": "HTTP",
+                "Path": "/health",
+                "Interval": 20,
+                "Timeout": 5,
+                "HealthyThreshold": 1,
+                "UnhealthyThreshold": 3
+            }')" \
         --region "$AWS_REGION"
 fi
 

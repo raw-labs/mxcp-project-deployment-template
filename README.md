@@ -45,6 +45,16 @@ Using this template immediately gives you:
 - ✅ Basic health check endpoint for uptime monitoring
 - ✅ External team collaboration support (Squirro)
 
+## Who Should Read This
+
+**RAW developers**: Use Quick Start, Template Components, Justfile Guide, and Examples to bootstrap and iterate quickly.
+
+**Squirro DevOps (Michal)**: Focus on Operations Runbook (AWS App Runner), Environment Variables, Troubleshooting, and Integration Guide for External Teams. Skim Quick Wins to understand intent.
+
+**Responsibilities at a glance**
+- RAW: code, MXCP configs, justfile customization, CI definition in `.github/`
+- Squirro: AWS infra (ECR/App Runner/IAM), runtime secrets, monitoring/alerts, operational runbooks
+
 ## 🚀 Quick Start
 
 ```bash
@@ -69,6 +79,7 @@ cp /path/to/template/ENVIRONMENT.md.template .
 
 - [Why This Template?](#-why-this-template)
 - [Quick Wins](#-quick-wins)
+- [Who Should Read This](#who-should-read-this)
 - [Quick Start](#-quick-start)
 - [Architecture Overview](#architecture-overview)
 - [Template Components](#template-components)
@@ -82,6 +93,7 @@ cp /path/to/template/ENVIRONMENT.md.template .
   - [Template Placeholders](#template-placeholders)
   - [Available Tasks](#available-tasks)
 - [Examples](#examples)
+- [Operations Runbook (AWS App Runner)](#operations-runbook-aws-app-runner)
 - [Integration Guide for DevOps Teams](#integration-guide-for-devops-teams)
   - [For RAW Labs Teams](#for-raw-labs-teams)
   - [For External Teams (Squirro)](#for-external-teams-squirro)
@@ -356,6 +368,7 @@ gh secret set ANTHROPIC_API_KEY     # Optional
 | Git | ✅ Yes | `apt install git` |
 | Docker | ⚠️ Optional | [Docker Desktop](https://docker.com) |
 | just | ⚠️ Recommended | `curl -sSf https://just.systems/install.sh \| bash` |
+| jq | ⚠️ Recommended | `apt-get install -y jq` (Ubuntu/Debian), `brew install jq` (macOS) |
 
 ## Usage
 
@@ -854,6 +867,79 @@ just ci-tests-with-data    # Standard CI tests with data
 | **Deployment Time** | < 10 minutes |
 | **Merge Conflicts** | Zero during RAW-Squirro collaboration |
 
+## Operations Runbook (AWS App Runner)
+
+This section is tailored for Squirro DevOps (Michal) operating the service on AWS App Runner.
+
+### First-time setup
+1. Create or identify an ECR repository for the image (e.g., `your-project-mxcp-server`).
+2. Ensure IAM role `AppRunnerECRAccessRole` exists and has ECR pull permissions.
+3. Set GitHub repository Secrets and Variables (see Environment Variables section).
+4. Copy `deployment/config.env.template` to `deployment/config.env` and set values.
+5. Important: define both `APP_RUNNER_SERVICE` and `SERVICE_NAME` to the same value for compatibility.
+
+### Deploy/Update (preferred: via GitHub Actions)
+- Push to `main` to trigger `.github/workflows/deploy.yml` which builds, pushes to ECR, and calls App Runner with runtime env.
+
+### Deploy/Update (manual from a workstation)
+```bash
+# Prerequisites: AWS CLI v2, Docker, jq; Logged in (aws configure or OIDC)
+export AWS_ACCOUNT_ID="684130658470"
+export AWS_REGION="eu-west-1"
+export ECR_REPOSITORY="your-project-mxcp-server"
+export SERVICE_NAME="your-project-mxcp-server"   # REQUIRED by the deploy script
+
+# Optional runtime secrets (only include what your MXCP config needs)
+export OPENAI_API_KEY="***"     # example
+
+# Run the deployment
+.github/scripts/deploy-app-runner.sh
+```
+
+Notes
+- On first creation the script also sets CPU and Memory from `deployment/config.env`.
+- Updates reuse the existing instance configuration unless recreated.
+
+### Health checks and logs
+- Get service URL:
+```bash
+aws apprunner describe-service \
+  --service-arn "arn:aws:apprunner:$AWS_REGION:$AWS_ACCOUNT_ID:service/$SERVICE_NAME" \
+  --query 'Service.ServiceUrl' --output text
+```
+- Health probe: `https://<service-url>/health` should return 200.
+- Logs: App Runner sends runtime logs to CloudWatch (check the created log group for the service).
+
+### Rollback to previous image
+1. Find previous image digest in ECR:
+```bash
+aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+  --query "reverse(sort_by(imageDetails,&imagePushedAt))[1].imageDigest" --output text
+```
+2. Retag that digest as `latest` and push:
+```bash
+ECR_REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+ECR_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY"
+PREV_DIGEST="sha256:..."   # from step 1
+
+aws ecr get-login-password --region "$AWS_REGION" | \
+  docker login --username AWS --password-stdin "$ECR_REGISTRY"
+
+docker pull "$ECR_IMAGE@$PREV_DIGEST"
+docker tag  "$ECR_IMAGE@$PREV_DIGEST" "$ECR_IMAGE:latest"
+docker push "$ECR_IMAGE:latest"
+```
+3. Redeploy (update) the service:
+```bash
+.github/scripts/deploy-app-runner.sh
+```
+
+### Destroy the service
+```bash
+aws apprunner delete-service \
+  --service-arn "arn:aws:apprunner:$AWS_REGION:$AWS_ACCOUNT_ID:service/$SERVICE_NAME"
+```
+
 ## Troubleshooting Common Issues
 
 ### Docker Build Failures
@@ -901,6 +987,7 @@ gh variable set AWS_ACCOUNT_ID --body "684130658470"
 gh variable set AWS_REGION --body "eu-west-1"
 gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
 gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
+gh variable set SERVICE_NAME --body "your-project-mxcp-server"   # ensure compatibility with deploy script
 ```
 
 ## Integration Guide for DevOps Teams
@@ -1068,6 +1155,16 @@ docker inspect your-image:latest | jq -r '
 - Runtime secrets are injected by App Runner, not baked into the image
 - Run `python deployment/env-validator.py` to check consistency
 - Runtime validation happens automatically in `deployment/start.sh`
+
+#### Variable name mapping (SERVICE_NAME vs APP_RUNNER_SERVICE)
+- The AWS deploy script at `.github/scripts/deploy-app-runner.sh` expects `SERVICE_NAME`.
+- The template `deployment/config.env.template` defines `APP_RUNNER_SERVICE`.
+- To avoid confusion, set both variables to the same value in CI and locally. Example:
+  ```bash
+  export APP_RUNNER_SERVICE="your-project-mxcp-server"
+  export SERVICE_NAME="$APP_RUNNER_SERVICE"
+  ```
+  This ensures the script finds the correct service name in all contexts.
 
 ## What's Included vs What's Not
 
