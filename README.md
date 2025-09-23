@@ -55,6 +55,16 @@ Using this template immediately gives you:
 - RAW: code, MXCP configs, justfile customization, CI definition in `.github/`
 - Squirro: AWS infra (ECR/App Runner/IAM), runtime secrets, monitoring/alerts, operational runbooks
 
+Squirro-specific operations guide (GitHub):
+- https://github.com/raw-labs/mxcp-squirro-devops-integration-guide
+
+### RAW Devs – At a Glance
+- Create a new repo from this template, or copy `.github/` and `deployment/` into your project
+- Run `./setup-project.sh --name <project> --type <data|remote_data|api>`
+- Customize `deployment/config.env`, `deployment/mxcp-user-config.yml`, and your `justfile`
+- Push to `main` → CI builds image, runs tests, deploys to App Runner
+- Verify `/health` and review logs in CloudWatch
+
 ## 🚀 Quick Start
 
 ```bash
@@ -80,6 +90,7 @@ cp /path/to/template/ENVIRONMENT.md.template .
 - [Why This Template?](#-why-this-template)
 - [Quick Wins](#-quick-wins)
 - [Who Should Read This](#who-should-read-this)
+- [RAW Devs – At a Glance](#raw-devs--at-a-glance)
 - [Quick Start](#-quick-start)
 - [Architecture Overview](#architecture-overview)
 - [Template Components](#template-components)
@@ -103,6 +114,7 @@ cp /path/to/template/ENVIRONMENT.md.template .
 - [Secret Management](#secret-management)
 - [What's Included vs What's Not](#whats-included-vs-whats-not)
 - [Support](#support)
+- [Resources](#resources)
 
 ## Architecture Overview
 
@@ -342,6 +354,7 @@ gh variable set AWS_ACCOUNT_ID --body "684130658470"    # Override AWS account I
 gh variable set AWS_REGION --body "eu-west-1"           # Override AWS region
 gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
 gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
+gh variable set SERVICE_NAME --body "your-project-mxcp-server"     # Used by deploy script
 gh variable set CPU_SIZE --body "1 vCPU"                 # Override CPU allocation
 gh variable set MEMORY_SIZE --body "4 GB"                # Override memory allocation
 ```
@@ -369,6 +382,7 @@ gh secret set ANTHROPIC_API_KEY     # Optional
 | Docker | ⚠️ Optional | [Docker Desktop](https://docker.com) |
 | just | ⚠️ Recommended | `curl -sSf https://just.systems/install.sh \| bash` |
 | jq | ⚠️ Recommended | `apt-get install -y jq` (Ubuntu/Debian), `brew install jq` (macOS) |
+| GitHub CLI (gh) | ⚠️ Optional | `apt-get install -y gh` (Ubuntu/Debian), `brew install gh` (macOS) |
 
 ## Usage
 
@@ -535,7 +549,8 @@ mkdir -p data/
 # Create data download script (customize for your source)
 mkdir -p scripts/
 # Create scripts/download_real_data.py for your data source (S3, API, etc.)
-# Docker will run this during build
+# GitHub Actions will run this before the Docker build (no secrets in build)
+# The Docker image will include the prepared data artifacts
 ```
 
 **Option C: Live API Integration**
@@ -810,12 +825,12 @@ After customization, your justfile will provide these tasks:
 - `just prepare-data` - Download data only (used in GitHub Actions)
 - `just prepare-build` - Download data + build models (used inside Docker)
 
-#### **Testing Tasks (3-Tier)**
+#### **Testing Tasks (4-Tier)**
 - `just test-config` - Validate YAML configurations (instant)
 - `just test-data` - Run dbt data quality tests (Level 1)
 - `just test-tools` - Test MXCP tools functionality (Level 2)
-- `just test-api` - Test external API integration (Level 2, API projects)
-- `just test-evals` - Run LLM evaluation tests (Level 3, costs apply)
+- `just test-api` - Test external API integration (Level 3, API projects)
+- `just test-evals` - Run LLM evaluation tests (Level 4, costs apply)
 - `just test-all` - Run all testing levels
 
 #### **Development Workflows**
@@ -826,6 +841,7 @@ After customization, your justfile will provide these tasks:
 
 #### **Utility Tasks**
 - `just validate-config` - Quick YAML validation (no data needed)
+- `just validate` - Run config + environment validations together
 - `just` or `just --list` - Show all available tasks
 
 ### Usage Examples
@@ -833,6 +849,9 @@ After customization, your justfile will provide these tasks:
 ```bash
 # Quick development cycle (free)
 just dev                    # Download data + build + test Levels 1+2
+
+# Quick validations
+just validate               # Validate config + env consistency
 
 # Full validation before release (costs apply)  
 just dev-full              # Download data + build + test all 3 levels
@@ -989,6 +1008,14 @@ gh variable set ECR_REPOSITORY --body "your-project-mxcp-server"
 gh variable set APP_RUNNER_SERVICE --body "your-project-mxcp-server"
 gh variable set SERVICE_NAME --body "your-project-mxcp-server"   # ensure compatibility with deploy script
 ```
+
+#### "jq: command not found" during deployment
+**Cause**: The deployment script now uses jq for safe JSON handling.
+**Fix**:
+```bash
+sudo apt-get update && sudo apt-get install -y jq
+```
+Add this to your CI runner setup if jq is not available by default.
 
 ## Integration Guide for DevOps Teams
 
@@ -1154,7 +1181,14 @@ docker inspect your-image:latest | jq -r '
 - CI/CD secrets (AWS_*) are NEVER passed to the running container
 - Runtime secrets are injected by App Runner, not baked into the image
 - Run `python deployment/env-validator.py` to check consistency
+- Prefer `just validate` to run both config and environment validation in one go
 - Runtime validation happens automatically in `deployment/start.sh`
+- Squirro installations: if `.github/.squirro-configured` exists (created by `.squirro/setup-for-squirro.sh`), the validator detects a Squirro environment and intentionally skips validation to avoid relying on RAW-specific workflows:
+  ```python
+  if Path('.github/.squirro-configured').exists():
+      print("🔍 Squirro environment detected (.github/.squirro-configured). Skipping validation.")
+      return 0
+  ```
 
 #### Variable name mapping (SERVICE_NAME vs APP_RUNNER_SERVICE)
 - The AWS deploy script at `.github/scripts/deploy-app-runner.sh` expects `SERVICE_NAME`.
@@ -1202,3 +1236,6 @@ docker inspect your-image:latest | jq -r '
 - **Technical Questions**: Pavlos Polydoras (pavlos@raw-labs.com)
 - **Template Issues**: Ben (ben@raw-labs.com)
 - **Documentation**: https://mxcp.dev/docs/
+
+## Resources
+- Squirro DevOps Guide: https://github.com/raw-labs/mxcp-squirro-devops-integration-guide

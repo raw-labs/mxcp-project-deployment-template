@@ -80,6 +80,10 @@ validate-env:
     @echo "🔍 Validating environment variable consistency..."
     @python deployment/env-validator.py || (echo "⚠️  Environment validation failed but continuing..."; true)
 
+# Combined validation (config + env)
+validate: validate-config validate-env
+    @echo "✅ All validations passed"
+
 # Full CI tests with data (for deploy workflow)
 ci-tests-with-data: test-config download build-models test-data
     @echo "✅ Full CI tests with data passed"

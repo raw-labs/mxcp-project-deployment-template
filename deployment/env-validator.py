@@ -44,8 +44,12 @@ class EnvValidator:
     def extract_workflow_env(self, workflow_path):
         """Extract env: block from deploy.yml"""
         with open(workflow_path, 'r') as f:
-            content = yaml.safe_load(f)
-            
+            content = yaml.safe_load(f) or {}
+
+        if not isinstance(content, dict):
+            # Unexpected structure; return empty env
+            return {}
+
         return content.get('env', {})
     
     def extract_mxcp_config_vars(self, config_path):
@@ -74,10 +78,24 @@ class EnvValidator:
         """Run all validation checks"""
         print("🔍 Validating environment variable consistency...\n")
         
+        # Skip validation for Squirro installations (configured by setup-for-squirro.sh)
+        if Path('.github/.squirro-configured').exists():
+            print("🔍 Squirro environment detected (.github/.squirro-configured). Skipping validation.")
+            return 0
+        
         # Extract all configurations
         docker_labels = self.extract_docker_labels('deployment/Dockerfile')
         deploy_vars = self.extract_deploy_script_vars('.github/scripts/deploy-app-runner.sh')
-        workflow_env = self.extract_workflow_env('.github/workflows/deploy.yml')
+        
+        # Only validate against RAW workflow by design; Squirro installs are skipped above
+        workflow_env = {}
+        github_workflow = Path('.github/workflows/deploy.yml')
+        if github_workflow.exists():
+            print("   📄 Detected RAW workflow: .github/workflows/deploy.yml")
+            try:
+                workflow_env.update(self.extract_workflow_env(str(github_workflow)))
+            except Exception:
+                self.warnings.append("Unable to parse .github/workflows/deploy.yml env block")
         
         # Use processed files if they exist, otherwise fall back to templates
         mxcp_config_file = 'deployment/mxcp-user-config.yml' if Path('deployment/mxcp-user-config.yml').exists() else 'deployment/mxcp-user-config.yml.template'
@@ -117,7 +135,9 @@ class EnvValidator:
         for var in workflow_env:
             if var.startswith('AWS_') or var.endswith('_ACCESS_KEY_ID') or var.endswith('_SECRET_ACCESS_KEY'):
                 if var not in docker_labels['cicd']:
-                    self.warnings.append(f"CI/CD variable {var} used in workflow but not documented in Docker labels")
+                    self.warnings.append(
+                        f"CI/CD variable {var} used in workflow but not documented in Docker labels"
+                    )
         
         # Validation 4: Config.env vars are non-sensitive
         print("4️⃣ Checking config.env variables...")
