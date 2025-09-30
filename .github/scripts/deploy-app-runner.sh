@@ -160,7 +160,12 @@ if SERVICE_INFO=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" 2>
                     "AccessRoleArn": ("arn:aws:iam::" + $account + ":role/AppRunnerECRAccessRole")
                 }
             }')"
-    echo "✅ Update deployment initiated with new environment variables"
+    echo "✅ Service configuration updated"
+    
+    # Force deployment to pull latest image from ECR (even with same :latest tag)
+    echo "🚀 Forcing deployment to pull latest image..."
+    aws apprunner start-deployment --service-arn "$SERVICE_ARN"
+    echo "✅ Deployment force-started - App Runner will pull fresh :latest image"
 else
     echo "🆕 Creating new App Runner service..."
     aws apprunner create-service \
