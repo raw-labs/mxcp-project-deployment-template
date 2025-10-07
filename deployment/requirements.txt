@@ -1,5 +1,5 @@
 # Core dependencies - pinned versions for production
-mxcp==0.6.1
+mxcp==0.4.0 # TODO: Update to 0.6.1 AFTER bug is fixed
 dbt-duckdb==1.8.3
 duckdb==1.0.0
 

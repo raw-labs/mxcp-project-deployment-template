@@ -2,6 +2,58 @@
 
 > 🚀 **Stop wasting days on deployment setup. This battle-tested template gives any MXCP project production-ready CI/CD in 5 minutes.**
 
+## Table of Contents
+
+- [Why This Template?](#-why-this-template)
+- [Quick Wins](#-quick-wins)
+- [Collaboration Model](#-collaboration-model-raw-labs--squirro)
+- [Who Should Read This](#who-should-read-this)
+- [RAW Devs – At a Glance](#raw-devs--at-a-glance)
+- [Quick Start](#-quick-start)
+- [Architecture Overview](#architecture-overview)
+- [Template Components](#template-components)
+- [Prerequisites](#prerequisites)
+- [Usage](#usage)
+  - [For New MXCP Projects](#for-new-mxcp-projects)
+  - [For Existing MXCP Projects](#for-existing-mxcp-projects)
+- [Template Philosophy](#template-philosophy)
+- [Justfile Guide](#justfile-guide)
+  - [4-Tiered Testing Architecture](#4-tiered-testing-architecture)
+  - [Template Placeholders](#template-placeholders)
+  - [Available Tasks](#available-tasks)
+- [Examples](#examples)
+- [Operations Runbook (AWS App Runner)](#operations-runbook-aws-app-runner)
+- [Integration Guide for DevOps Teams](#integration-guide-for-devops-teams)
+  - [For RAW Labs Teams](#for-raw-labs-teams)
+  - [For External Teams (Squirro)](#for-external-teams-squirro)
+  - [Network and Service Discovery](#network-and-service-discovery)
+  - [Environment Variables](#environment-variables)
+  - [Production Checklist](#production-checklist)
+- [Secret Management](#secret-management)
+- [What's Included vs What's Not](#whats-included-vs-whats-not)
+- [Support](#support)
+- [Resources](#resources)
+
+## Who Should Read This
+
+**RAW developers**: Use Quick Start, Template Components, Justfile Guide, and Examples to bootstrap and iterate quickly.
+
+**Squirro DevOps (Michal)**: Focus on Operations Runbook (AWS App Runner), Environment Variables, Troubleshooting, and Integration Guide for External Teams. Skim Quick Wins to understand intent.
+
+**Responsibilities at a glance**
+- RAW: code, MXCP configs, justfile customization, CI definition in `.github/`
+- Squirro: AWS infra (ECR/App Runner/IAM), runtime secrets, monitoring/alerts, operational runbooks
+
+Squirro-specific operations guide (GitHub):
+- https://github.com/raw-labs/mxcp-squirro-devops-integration-guide
+
+### RAW Devs – At a Glance
+- Create a new repo from this template, or copy `.github/` and `deployment/` into your project
+- Run `./setup-project.sh --name <project> --type <data|remote_data|api>`
+- Customize `deployment/config.env`, `deployment/mxcp-user-config.yml`, and your `justfile`
+- Push to `main` → CI builds image, runs tests, deploys to App Runner
+- Verify `/health` and review logs in CloudWatch
+
 ## 🎯 Why This Template?
 
 ### Problems We're Solving
@@ -28,6 +80,11 @@
 - Missing environment variables in production
 - No standardized health checks or monitoring
 
+🤝 **Collaboration Friction**
+- No clear handoff process between RAW Labs and external teams
+- Updates break customizations
+- Unclear ownership boundaries
+
 ### The Solution
 
 **One template, infinite projects:**
@@ -35,6 +92,7 @@
 - **Zero secrets** in Docker images
 - **4-tiered testing** catches issues early (data → tools → API → LLM)
 - **Battle-tested** in production
+- **Fork-and-diverge collaboration** model for smooth handoffs
 
 ## 🏆 Quick Wins
 
@@ -44,6 +102,30 @@ Using this template immediately gives you:
 - ✅ 4-tiered testing (data → tools → API → LLM)
 - ✅ Basic health check endpoint for uptime monitoring
 - ✅ External team collaboration support (Squirro)
+
+## 🤝 Collaboration Model (RAW Labs ↔ Squirro)
+
+This template enables a **fork-and-diverge collaboration model** specifically designed for vendor-client relationships:
+
+```mermaid
+graph LR
+    A[RAW Develops<br/>in raw-labs/project] --> B[Squirro Forks<br/>to their GitHub]
+    B --> C[Early Updates<br/>via merge-from-raw.sh]
+    C --> D[Mature Project<br/>Squirro owns fully]
+    
+    style A fill:#e3f2fd,stroke:#1976d2
+    style B fill:#fff3e0,stroke:#f57c00
+    style C fill:#f3e5f5,stroke:#7b1fa2
+    style D fill:#e8f5e9,stroke:#388e3c
+```
+
+**Key Benefits:**
+- 🔧 **Clear handoff** - Squirro knows exactly when they own the code
+- 🔄 **Controlled updates** - Cherry-pick improvements without breaking customizations
+- 🚀 **No vendor lock-in** - Squirro eventually owns everything
+- 📁 **`.squirro/` directory** - Contains all collaboration tools and workflows
+
+Learn more: [MXCP-Squirro Integration Guide](https://github.com/raw-labs/mxcp-squirro-devops-integration-guide)
 
 ## Who Should Read This
 
@@ -79,7 +161,6 @@ cp -r /path/to/template/.github .
 cp -r /path/to/template/deployment .
 cp /path/to/template/justfile.template .
 cp /path/to/template/setup-project.sh .
-cp /path/to/template/ENVIRONMENT.md.template .
 ./setup-project.sh --name my-project --type remote_data
 
 # Don't forget to customize .github/workflows/deploy.yml with your secrets!
@@ -89,6 +170,7 @@ cp /path/to/template/ENVIRONMENT.md.template .
 
 - [Why This Template?](#-why-this-template)
 - [Quick Wins](#-quick-wins)
+- [Collaboration Model](#-collaboration-model-raw-labs--squirro)
 - [Who Should Read This](#who-should-read-this)
 - [RAW Devs – At a Glance](#raw-devs--at-a-glance)
 - [Quick Start](#-quick-start)
@@ -117,6 +199,20 @@ cp /path/to/template/ENVIRONMENT.md.template .
 - [Resources](#resources)
 
 ## Architecture Overview
+
+### Why the Fork-and-Diverge Model?
+
+Traditional vendor-client relationships often fail because:
+- 🔒 Vendors maintain control (vendor lock-in)
+- 🚫 Clients can't customize without breaking updates
+- 😕 Unclear ownership leads to finger-pointing
+- 💔 No graceful way to transition ownership
+
+This template solves these problems with:
+- ✅ **Clear stages** - Everyone knows who owns what, when
+- ✅ **Selective updates** - Take improvements without breaking customizations
+- ✅ **Clean handoff** - Squirro eventually owns everything
+- ✅ **No surprises** - The endgame is explicit from day one
 
 ### Before vs After
 
@@ -319,12 +415,13 @@ mxcp-project-deployment-template/
 │   ├── profiles-docker.yml.template  # dbt profiles
 │   ├── requirements.txt       # Python dependencies
 │   └── start.sh              # Container startup
-├── .squirro/                  # External team integration
-│   ├── setup-for-squirro.sh.template
-│   └── merge-from-raw.sh     
+├── .squirro/                  # External team collaboration tools
+│   ├── setup-for-squirro.sh   # One-time setup for Squirro fork
+│   ├── merge-from-raw.sh      # Pull updates from RAW Labs
+│   └── workflows/             # Squirro-specific CI/CD
+│       └── build-and-push-to-ecr.yml
 ├── justfile.template          # Task runner config
 ├── setup-project.sh           # One-click setup
-├── ENVIRONMENT.md.template    # Variable documentation
 └── README.md                  # This file
 ```
 
@@ -336,7 +433,7 @@ mxcp-project-deployment-template/
 |-----------|---------|-------------|
 | **AWS Account** | Deployment target | [AWS Free Tier](https://aws.amazon.com/free/) |
 | **GitHub Account** | CI/CD and version control | [GitHub Signup](https://github.com/join) |
-| **IAM Role** | `AppRunnerECRAccessRole` | See ENVIRONMENT.md |
+| **IAM Role** | `AppRunnerECRAccessRole` | See Environment Variables section |
 
 ### 🔑 Configuration Approach: Hybrid (config.env + GitHub Variables)
 
@@ -523,7 +620,6 @@ mxcp init --bootstrap
 # Remove .template files after customization to keep your project clean
 rm -f justfile.template
 rm -f deployment/*.template
-rm -f ENVIRONMENT.md.template
 ```
 
 **7. Choose Your Data Strategy**
@@ -669,15 +765,17 @@ cp -r /path/to/template/.squirro .
 
 ## Template Philosophy
 
-- **`.github/` = PROJECT-CUSTOMIZED** - Add your project's secrets to the `env:` block
-- **`.squirro/` = SQUIRRO-SPECIFIC** - Tools and workflows for Squirro integration
-- **`deployment/` = CUSTOMIZABLE** - Projects modify configuration files
-- **`justfile.template` = GENERIC** - Uses placeholders for project-specific commands:
-  - `{{DATA_DOWNLOAD_COMMAND}}` - How to download your project's data
-  - `{{DBT_DEPS_COMMAND}}` - Install dbt dependencies (or skip for API projects)
-  - `{{DBT_RUN_COMMAND}}` - How to run dbt with your data variables
-  - `{{DBT_TEST_COMMAND}}` - How to test dbt with your data variables
-- **Simplicity over standardization** - Each project customizes what it needs
+The template is structured to support the **fork-and-diverge collaboration model**:
+
+- **`.github/` = RAW-OWNED** - CI/CD workflows that RAW develops and tests
+- **`.squirro/` = COLLABORATION BRIDGE** - Tools enabling smooth handoff and updates:
+  - `setup-for-squirro.sh` - Marks clear divergence point
+  - `merge-from-raw.sh` - Selective update mechanism
+  - Squirro-specific workflows that don't conflict with RAW's
+- **`deployment/` = CUSTOMIZABLE** - Configuration both teams can modify
+- **`justfile.template` = STANDARDIZED INTERFACE** - Common commands work everywhere
+- **Separation of concerns** - Clear boundaries prevent merge conflicts
+- **Progressive ownership** - Squirro gradually takes full control
 
 ## Justfile Guide
 
@@ -1021,48 +1119,54 @@ Add this to your CI runner setup if jq is not available by default.
 
 ### Overview
 
-This template enables standardized deployment of MXCP servers with proven patterns for both RAW Labs and external teams (like Squirro). The architecture supports:
+This template implements a **fork-and-diverge collaboration model** designed for smooth handoffs between RAW Labs (vendor) and external teams like Squirro (client). The architecture enables:
 
-- **Standardized CI/CD** with AWS App Runner or external systems
-- **Flexible data strategies** (static, downloaded, or API-based)
-- **Basic health check endpoint** for uptime monitoring
-- **Clean separation** between stable infrastructure and customizable components
+- **Progressive ownership transfer** - From RAW development to client ownership
+- **Controlled updates** - Merge improvements without breaking customizations
+- **Clear boundaries** - Well-defined responsibilities at each stage
+- **No vendor lock-in** - Clients eventually own everything
 
-### For RAW Labs Teams
+### Collaboration Lifecycle
 
-1. **Create new MXCP project from template:**
+#### Stage 1: RAW Labs Development
+RAW Labs creates and tests the complete MXCP solution:
 ```bash
+# RAW creates project from template
 cp -r mxcp-project-deployment-template/ new-project/
 cd new-project
 ./setup-project.sh --name project-name --type remote_data
+
+# Implement and test
+git push origin main  # Deploys to RAW's infrastructure
 ```
 
-2. **Implement project logic:**
-- Add tools in `tools/`
-- Create data scripts in `scripts/`
-- Set up dbt models in `models/`
-
-3. **Deploy:**
+#### Stage 2: Squirro Fork & Setup
+When ready, Squirro forks the repository:
 ```bash
-git push origin main  # Triggers automatic deployment
-```
+# Fork RAW's repository (not the template!)
+gh repo fork raw-labs/project-name --fork-name project-name --clone
+cd project-name
 
-### For External Teams (Squirro)
-
-1. **Fork the project repository** (not this template)
-2. **Run Squirro setup:**
-```bash
+# Run one-time Squirro setup
 ./.squirro/setup-for-squirro.sh
 ```
-3. **Customize for your infrastructure:**
-- Update `deployment/config.env`
-- Modify data sources if needed
-- Configure your deployment system
 
-4. **Merge updates from RAW:**
+This creates a clear divergence point and marks the repo as "Squirro-operated".
+
+#### Stage 3: Early Collaboration
+During the first weeks/months, receive updates from RAW:
 ```bash
+# Pull RAW's improvements selectively
 ./.squirro/merge-from-raw.sh
+
+# Review, test, and deploy
+git push origin main
 ```
+
+#### Stage 4: Full Ownership
+- Disconnect from upstream (RAW's repo)
+- Squirro owns and maintains everything
+- RAW provides consulting/support only
 
 ### Network and Service Discovery
 
